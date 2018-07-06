@@ -4,6 +4,10 @@
   "description": "Tablet Command Heartbeat",
   "main": "lib/index",
   "types": "lib/index",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/bamse16/tabletcommand-backend-heartbeat.git"
+  },
   "scripts": {
     "build": "./node_modules/gulp/bin/gulp.js transpile",
     "lint": "./node_modules/gulp/bin/gulp.js lint",
