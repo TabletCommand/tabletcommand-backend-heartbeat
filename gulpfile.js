@@ -1,14 +1,13 @@
-var gulp = require("gulp");
+const gulp = require("gulp");
 const eslint = require("gulp-eslint");
-var ts = require("gulp-typescript");
-var tsProject = ts.createProject("tsconfig.json");
+const mocha = require("gulp-mocha");
+const ts = require("gulp-typescript");
+const tsProject = ts.createProject("tsconfig.json");
 
 gulp.task("lint", function() {
   const sources = [
     "*.js",
     "src/lib/**",
-    "src/middleware/*.js",
-    "src/routes/*.js",
     "test/*.js"
   ];
   return gulp.src(sources)
@@ -17,8 +16,25 @@ gulp.task("lint", function() {
     .pipe(eslint.failAfterError());
 });
 
-gulp.task("default", function() {
+gulp.task("test", ["lint"], function() {
+  var tests = [
+    "test/*.js"
+  ];
+  var srcOpts = {
+    read: false
+  };
+  return gulp.src(tests, srcOpts)
+    .pipe(mocha({
+      reporter: "list"
+    }));
+});
+
+gulp.task("build", ["lint"], function() {
   return tsProject.src()
     .pipe(tsProject())
     .js.pipe(gulp.dest("lib"));
+});
+
+gulp.task("default", ["build"], function() {
+
 });

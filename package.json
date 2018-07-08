@@ -41,6 +41,7 @@
     "gulp-typescript": "^5.0.0-alpha.3",
     "mocha": "^5.2.0",
     "nodemon": "^1.17.5",
+    "redis-js": "^0.1.2",
     "ts-node": "^7.0.0",
     "typescript": "^2.9.2"
   }
