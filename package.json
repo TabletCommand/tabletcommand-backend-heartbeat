@@ -1,6 +1,6 @@
 {
   "name": "tabletcommand-backend-heartbeat",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Tablet Command Heartbeat",
   "main": "lib/index",
   "types": "lib/index",
@@ -9,7 +9,7 @@
     "url": "git://github.com/bamse16/tabletcommand-backend-heartbeat.git"
   },
   "scripts": {
-    "build": "./node_modules/gulp/bin/gulp.js transpile",
+    "build": "./node_modules/gulp/bin/gulp.js build",
     "lint": "./node_modules/gulp/bin/gulp.js lint",
     "test": "./node_modules/gulp/bin/gulp.js",
     "start": "npm run build:live",
