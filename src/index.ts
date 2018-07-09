@@ -121,7 +121,7 @@ module.exports = function module(dependencies: any) {
     });
   }
 
-  function check(department: any, callback: Callback<any>) {
+  function checkDepartment(department: any, callback: Callback<any>) {
     if (!_.isObject(department.heartbeat)) {
       department.heartbeat = {
         incident: [],
@@ -150,6 +150,26 @@ module.exports = function module(dependencies: any) {
     });
   }
 
+  function checkDepartments(items: Array<any>, callback: Callback<Array<any>>) {
+    return checkHeartbeats(items, 0, [], callback);
+  }
+
+  function checkHeartbeats(items: Array<any>, index: number, storage: Array<any>, callback: Callback<Array<any>>): any {
+    if (index >= _.size(items)) {
+      return callback(null, storage);
+    }
+
+    const department = items[index];
+    return checkDepartment(department, function (err, dept) {
+      if (err) {
+        return callback(err, []);
+      }
+
+      storage.push(dept);
+      return checkHeartbeats(items, index + 1, storage, callback);
+    });
+  }
+
   function defaultMessage(): HeartbeatMessage {
     const receivedTime = new Date().valueOf() / 1000;
     const message: HeartbeatMessage = {
@@ -162,7 +182,7 @@ module.exports = function module(dependencies: any) {
 
   return {
     log,
-    check,
+    checkDepartments,
     defaultMessage
   };
 }
