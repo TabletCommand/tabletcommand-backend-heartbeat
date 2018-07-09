@@ -4,7 +4,6 @@
 import * as redis from "redis";
 
 module.exports = function module(dependencies: any) {
-  const redis = dependencies.redis;
   const client = dependencies.redisClient as redis.RedisClient;
 
   const _ = require("lodash");
@@ -16,9 +15,10 @@ module.exports = function module(dependencies: any) {
 
   type Resolve<T> = (resolved: T) => void;
   type Callback<T> = (err: Error | null, result: T) => void;
-
-  function configure(config: redis.ClientOpts): redis.RedisClient {
-    return redis.createClient(config);
+  interface HeartbeatMessage {
+    Time: string;
+    Status: string;
+    Message: string;
   }
 
   function keyForHeartbeat(type: string, callback: Resolve<string>) {
@@ -46,7 +46,7 @@ module.exports = function module(dependencies: any) {
     return callback(key);
   }
 
-  function cleanupMessage(message: any, callback: Resolve<object>) {
+  function cleanupMessage(message: any, callback: Resolve<HeartbeatMessage>) {
     if (!_.isString(message.Time)) {
       // If no .Time provided, peek into .Unit
       if (_.isArray(message.Unit)) {
@@ -150,9 +150,19 @@ module.exports = function module(dependencies: any) {
     });
   }
 
+  function defaultMessage(): HeartbeatMessage {
+    const receivedTime = new Date().valueOf() / 1000;
+    const message: HeartbeatMessage = {
+      Time: `${receivedTime}`,
+      Status: "OK",
+      Message: ""
+    };
+    return message;
+  }
+
   return {
-    configure,
     log,
-    check
+    check,
+    defaultMessage
   };
 }

@@ -1,6 +1,6 @@
 {
   "name": "tabletcommand-backend-heartbeat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tablet Command Heartbeat",
   "main": "lib/index",
   "types": "lib/index",
