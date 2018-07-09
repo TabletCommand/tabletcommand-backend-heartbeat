@@ -19,6 +19,7 @@ module.exports = function module(dependencies: any) {
     Time: string;
     Status: string;
     Message: string;
+    RcvTime: number;
   }
 
   function keyForHeartbeat(type: string, callback: Resolve<string>) {
@@ -175,7 +176,8 @@ module.exports = function module(dependencies: any) {
     const message: HeartbeatMessage = {
       Time: `${receivedTime}`,
       Status: "OK",
-      Message: ""
+      Message: "",
+      RcvTime: receivedTime
     };
     return message;
   }
@@ -183,6 +185,7 @@ module.exports = function module(dependencies: any) {
   return {
     log,
     checkDepartments,
+    checkDepartment,
     defaultMessage
   };
 }
