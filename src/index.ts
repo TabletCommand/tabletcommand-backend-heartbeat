@@ -15,7 +15,7 @@ module.exports = function module(dependencies: any) {
 
   type Resolve<T> = (resolved: T) => void;
   type Callback<T> = (err: Error | null, result: T) => void;
-  interface HeartbeatMessage {
+  interface IHeartbeatMessage {
     Time: string;
     Status: string;
     Message: string;
@@ -47,12 +47,12 @@ module.exports = function module(dependencies: any) {
     return callback(key);
   }
 
-  function cleanupMessage(message: any, callback: Resolve<HeartbeatMessage>) {
+  function cleanupMessage(message: any, callback: Resolve<IHeartbeatMessage>) {
     if (!_.isString(message.Time)) {
       // If no .Time provided, peek into .Unit
       if (_.isArray(message.Unit)) {
-        var unitTime = null;
-        _.each(message.Unit, function (unit: any) {
+        let unitTime = null;
+        _.each(message.Unit, (unit: any) => {
           if (_.isString(unit.TimeArrived)) {
             unitTime = unit.TimeArrived;
           } else if (_.isString(unit.TimeEnroute)) {
@@ -70,14 +70,14 @@ module.exports = function module(dependencies: any) {
       }
     }
 
-    var msg = _.pick(message, ["Time", "Status", "Message"]);
+    const msg = _.pick(message, ["Time", "Status", "Message"]);
     msg.RcvTime = new Date().getTime() / 1000.0;
     return callback(msg);
   }
 
   function log(department: any, message: any, type: string, callback: any) {
     if (!_.isObject(department)) {
-      console.log("Undefined department", department);
+      // console.log("Undefined department", department);
       return callback(null);
     }
 
@@ -85,17 +85,17 @@ module.exports = function module(dependencies: any) {
       return callback(null);
     }
 
-    return keyForHeartbeat(type, function (keyPrefix) {
+    return keyForHeartbeat(type, (keyPrefix) => {
       // Log Heartbeat cannot expire keys, because we'd lose the last message
       // we're limiting the list to maxListSize items instead
-      return keyForDepartment(department, keyPrefix, function (key) {
-        return cleanupMessage(message, function (msg) {
-          return client.lpush(key, JSON.stringify(msg), function (err, result) {
-            if (err) {
-              return callback(err);
+      return keyForDepartment(department, keyPrefix, (key) => {
+        return cleanupMessage(message, (msg) => {
+          return client.lpush(key, JSON.stringify(msg), (lpushErr) => {
+            if (lpushErr) {
+              return callback(lpushErr);
             }
-            return client.ltrim(key, 0, maxListSize - 1, function (err, result) {
-              return callback(err);
+            return client.ltrim(key, 0, maxListSize - 1, (ltrimErr) => {
+              return callback(ltrimErr);
             });
           });
         });
@@ -103,14 +103,14 @@ module.exports = function module(dependencies: any) {
     });
   }
 
-  function heartbeatItems(department: any, type: string, callback: Callback<Array<any>>) {
-    return keyForHeartbeat(type, function (keyPrefix) {
-      return keyForDepartment(department, keyPrefix, function (key) {
+  function heartbeatItems(department: any, type: string, callback: Callback<any[]>) {
+    return keyForHeartbeat(type, (keyPrefix) => {
+      return keyForDepartment(department, keyPrefix, (key) => {
 
         helpers.configureMomentOpts();
-        return client.lrange(key, 0, maxListSize, function (err, result) {
-          var enhancedResults = _.map(result, function (i: string) {
-            var item = JSON.parse(i);
+        return client.lrange(key, 0, maxListSize, (err, result) => {
+          const enhancedResults = _.map(result, (i: string) => {
+            const item = JSON.parse(i);
             item.RcvTimeSFO = moment.unix(item.RcvTime).tz("America/Los_Angeles").toString();
             item.RcvTimeMEL = moment.unix(item.RcvTime).tz("Australia/Melbourne").toString();
             item.timeAgo = moment(item.RcvTime * 1000).fromNow();
@@ -126,42 +126,42 @@ module.exports = function module(dependencies: any) {
     if (!_.isObject(department.heartbeat)) {
       department.heartbeat = {
         incident: [],
+        location: [],
         status: [],
-        location: []
       };
     }
 
-    return heartbeatItems(department, "incident", function (err, items) {
-      if (err) {
-        return callback(err, department);
+    return heartbeatItems(department, "incident", (errIncident, incident) => {
+      if (errIncident) {
+        return callback(errIncident, department);
       }
-      department.heartbeat.incident = items;
+      department.heartbeat.incident = incident;
 
-      return heartbeatItems(department, "status", function (err, items) {
-        if (err) {
-          return callback(err, department);
+      return heartbeatItems(department, "status", (errStatus, status) => {
+        if (errStatus) {
+          return callback(errStatus, department);
         }
-        department.heartbeat.status = items;
+        department.heartbeat.status = status;
 
-        return heartbeatItems(department, "location", function (err, items) {
-          department.heartbeat.location = items;
-          return callback(err, department);
+        return heartbeatItems(department, "location", (errLocation, location) => {
+          department.heartbeat.location = location;
+          return callback(errLocation, department);
         });
       });
     });
   }
 
-  function checkDepartments(items: Array<any>, callback: Callback<Array<any>>) {
+  function checkDepartments(items: any[], callback: Callback<any[]>) {
     return checkHeartbeats(items, 0, [], callback);
   }
 
-  function checkHeartbeats(items: Array<any>, index: number, storage: Array<any>, callback: Callback<Array<any>>): any {
+  function checkHeartbeats(items: any[], index: number, storage: any[], callback: Callback<any[]>): any {
     if (index >= _.size(items)) {
       return callback(null, storage);
     }
 
     const department = items[index];
-    return checkDepartment(department, function (err, dept) {
+    return checkDepartment(department, (err, dept) => {
       if (err) {
         return callback(err, []);
       }
@@ -171,21 +171,21 @@ module.exports = function module(dependencies: any) {
     });
   }
 
-  function defaultMessage(): HeartbeatMessage {
+  function defaultMessage(): IHeartbeatMessage {
     const receivedTime = new Date().valueOf() / 1000;
-    const message: HeartbeatMessage = {
-      Time: `${receivedTime}`,
-      Status: "OK",
+    const message: IHeartbeatMessage = {
       Message: "",
-      RcvTime: receivedTime
+      RcvTime: receivedTime,
+      Status: "OK",
+      Time: `${receivedTime}`,
     };
     return message;
   }
 
   return {
-    log,
-    checkDepartments,
     checkDepartment,
-    defaultMessage
+    checkDepartments,
+    defaultMessage,
+    log,
   };
-}
+};
