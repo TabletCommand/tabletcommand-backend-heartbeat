@@ -1,10 +1,11 @@
 const gulp = require("gulp");
 const eslint = require("gulp-eslint");
-const mocha = require("gulp-mocha");
+const tslint = require("gulp-tslint");
+// const mocha = require("gulp-mocha");
 const ts = require("gulp-typescript");
 const tsProject = ts.createProject("tsconfig.json");
 
-gulp.task("lint", function() {
+gulp.task("eslint", function() {
   const sources = [
     "*.js",
     "src/lib/**",
@@ -16,6 +17,23 @@ gulp.task("lint", function() {
     .pipe(eslint.failAfterError());
 });
 
+gulp.task("tslint", function() {
+  const sources = [
+    "*.ts",
+    "src/**/*.ts"
+  ];
+  return gulp.src(sources)
+    .pipe(tslint({
+      formatter: "verbose"
+    }))
+    .pipe(tslint.report());
+});
+
+gulp.task("lint", gulp.series("tslint", function() {
+  gulp.series("eslint");
+}));
+
+/*
 gulp.task("test", ["lint"], function() {
   var tests = [
     "test/*.js"
@@ -29,12 +47,14 @@ gulp.task("test", ["lint"], function() {
     }));
 });
 
-gulp.task("build", ["lint"], function() {
+*/
+
+gulp.task("build", gulp.series("lint", function() {
   return tsProject.src()
     .pipe(tsProject())
     .js.pipe(gulp.dest("lib"));
-});
+}));
 
-gulp.task("default", ["build"], function() {
+gulp.task("default", gulp.series("build", function() {
 
-});
+}));
