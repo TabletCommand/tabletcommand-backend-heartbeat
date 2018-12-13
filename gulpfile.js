@@ -1,6 +1,7 @@
 const gulp = require("gulp");
 const eslint = require("gulp-eslint");
-const tslint = require("gulp-tslint");
+const gulpTslint = require("gulp-tslint");
+const tslint = require("tslint");
 // const mocha = require("gulp-mocha");
 const ts = require("gulp-typescript");
 const tsProject = ts.createProject("tsconfig.json");
@@ -18,19 +19,22 @@ gulp.task("eslint", function() {
 });
 
 gulp.task("tslint", function() {
+  const program = tslint.Linter.createProgram("./tsconfig.json");
   const sources = [
     "*.ts",
     "src/**/*.ts"
   ];
   return gulp.src(sources)
-    .pipe(tslint({
-      formatter: "verbose"
+    .pipe(gulpTslint({
+      formatter: "verbose",
+      program: program
     }))
-    .pipe(tslint.report());
+    .pipe(gulpTslint.report());
 });
 
-gulp.task("lint", gulp.series("tslint", function() {
+gulp.task("lint", gulp.series("tslint", function eslint(done) {
   gulp.series("eslint");
+  return done();
 }));
 
 /*

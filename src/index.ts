@@ -77,7 +77,6 @@ module.exports = function module(dependencies: any) {
 
   function log(department: any, message: any, type: string, callback: any) {
     if (!_.isObject(department)) {
-      // console.log("Undefined department", department);
       return callback(null);
     }
 
@@ -173,13 +172,12 @@ module.exports = function module(dependencies: any) {
 
   function defaultMessage(): IHeartbeatMessage {
     const receivedTime = new Date().valueOf() / 1000;
-    const message: IHeartbeatMessage = {
+    return {
       Message: "",
       RcvTime: receivedTime,
       Status: "OK",
       Time: `${receivedTime}`,
     };
-    return message;
   }
 
   return {
