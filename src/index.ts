@@ -15,12 +15,16 @@ module.exports = function module(dependencies: any) {
 
   type Resolve<T> = (resolved: T) => void;
   type Callback<T> = (err: Error | null, result: T) => void;
+  type CallbackErr = (err: Error | null) => void;
+
   interface IHeartbeatMessage {
     Time: string;
     Status: string;
     Message: string;
     RcvTime: number;
   }
+
+  type RedisKey = string;
 
   function keyForHeartbeat(type: string, callback: Resolve<string>) {
     let keyPrefix = "hb:x";
@@ -35,7 +39,7 @@ module.exports = function module(dependencies: any) {
     return callback(keyPrefix);
   }
 
-  function keyForDepartment(department: any, prefix: string, callback: Resolve<string>) {
+  function keyForDepartment(department: any, prefix: string, callback: Resolve<RedisKey>) {
     let departmentId = "unknown";
     if (_.isString(department.id)) {
       departmentId = department.id;
@@ -47,7 +51,7 @@ module.exports = function module(dependencies: any) {
     return callback(key);
   }
 
-  function cleanupMessage(message: any, callback: Resolve<IHeartbeatMessage>) {
+  function heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>) {
     if (!_.isString(message.Time)) {
       // If no .Time provided, peek into .Unit
       if (_.isArray(message.Unit)) {
@@ -75,7 +79,7 @@ module.exports = function module(dependencies: any) {
     return callback(msg);
   }
 
-  function log(department: any, message: any, type: string, callback: any) {
+  function log(department: any, message: any, type: string, callback: CallbackErr) {
     if (!_.isObject(department)) {
       return callback(null);
     }
@@ -88,16 +92,22 @@ module.exports = function module(dependencies: any) {
       // Log Heartbeat cannot expire keys, because we'd lose the last message
       // we're limiting the list to maxListSize items instead
       return keyForDepartment(department, keyPrefix, (key) => {
-        return cleanupMessage(message, (msg) => {
-          return client.lpush(key, JSON.stringify(msg), (lpushErr) => {
-            if (lpushErr) {
-              return callback(lpushErr);
-            }
-            return client.ltrim(key, 0, maxListSize - 1, (ltrimErr) => {
-              return callback(ltrimErr);
-            });
+        return heartbeatFromMessage(message, (msg) => {
+          return storeHeartbeat(key, msg, (err) => {
+            return callback(err);
           });
         });
+      });
+    });
+  }
+
+  function storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr) {
+    return client.lpush(key, JSON.stringify(msg), (lpushErr) => {
+      if (lpushErr) {
+        return callback(lpushErr);
+      }
+      return client.ltrim(key, 0, maxListSize - 1, (ltrimErr) => {
+        return callback(ltrimErr);
       });
     });
   }
@@ -184,6 +194,7 @@ module.exports = function module(dependencies: any) {
     checkDepartment,
     checkDepartments,
     defaultMessage,
+    heartbeatFromMessage,
     log,
   };
 };
