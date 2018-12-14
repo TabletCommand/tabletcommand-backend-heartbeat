@@ -1,5 +1,6 @@
 "use strict";
 
+/// <reference types="./lib/globals.d.ts" />
 /// <reference types="redis" />
 import * as redis from "redis";
 
@@ -11,73 +12,9 @@ module.exports = function module(dependencies: any) {
 
   const helpers = require("tabletcommand-middleware").helpers;
 
+  const domain = require("./lib/domain")() as IDomainModule;
+
   const maxListSize: number = 30;
-
-  type Resolve<T> = (resolved: T) => void;
-  type Callback<T> = (err: Error | null, result: T) => void;
-  type CallbackErr = (err: Error | null) => void;
-
-  interface IHeartbeatMessage {
-    Time: string;
-    Status: string;
-    Message: string;
-    RcvTime: number;
-  }
-
-  type RedisKey = string;
-
-  function keyForHeartbeat(type: string, callback: Resolve<string>) {
-    let keyPrefix = "hb:x";
-    if (type === "incident") {
-      keyPrefix = "hb:i";
-    } else if (type === "status") {
-      keyPrefix = "hb:s";
-    } else if (type === "location") {
-      keyPrefix = "hb:l";
-    }
-
-    return callback(keyPrefix);
-  }
-
-  function keyForDepartment(department: any, prefix: string, callback: Resolve<RedisKey>) {
-    let departmentId = "unknown";
-    if (_.isString(department.id)) {
-      departmentId = department.id;
-    } else if (_.isString(department._id)) {
-      departmentId = department._id;
-    }
-
-    const key = `${prefix}:${departmentId}`;
-    return callback(key);
-  }
-
-  function heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>) {
-    if (!_.isString(message.Time)) {
-      // If no .Time provided, peek into .Unit
-      if (_.isArray(message.Unit)) {
-        let unitTime = null;
-        _.each(message.Unit, (unit: any) => {
-          if (_.isString(unit.TimeArrived)) {
-            unitTime = unit.TimeArrived;
-          } else if (_.isString(unit.TimeEnroute)) {
-            unitTime = unit.TimeEnroute;
-          } else if (_.isString(unit.TimeDispatched)) {
-            unitTime = unit.TimeDispatched;
-          }
-        });
-
-        if (!_.isNull(unitTime) && !_.isUndefined(unitTime)) {
-          message.Time = unitTime;
-        }
-      } else if (_.isString(message.EntryDateTime)) {
-        message.Time = message.EntryDateTime;
-      }
-    }
-
-    const msg = _.pick(message, ["Time", "Status", "Message"]);
-    msg.RcvTime = new Date().getTime() / 1000.0;
-    return callback(msg);
-  }
 
   function log(department: any, message: any, type: string, callback: CallbackErr) {
     if (!_.isObject(department)) {
@@ -88,14 +25,12 @@ module.exports = function module(dependencies: any) {
       return callback(null);
     }
 
-    return keyForHeartbeat(type, (keyPrefix) => {
+    return domain.heartbeatKeyForTypeOfDepartment(type, department, (key) => {
       // Log Heartbeat cannot expire keys, because we'd lose the last message
       // we're limiting the list to maxListSize items instead
-      return keyForDepartment(department, keyPrefix, (key) => {
-        return heartbeatFromMessage(message, (msg) => {
-          return storeHeartbeat(key, msg, (err) => {
-            return callback(err);
-          });
+      return domain.heartbeatFromMessage(message, (msg) => {
+        return storeHeartbeat(key, msg, (err) => {
+          return callback(err);
         });
       });
     });
@@ -113,20 +48,17 @@ module.exports = function module(dependencies: any) {
   }
 
   function heartbeatItems(department: any, type: string, callback: Callback<any[]>) {
-    return keyForHeartbeat(type, (keyPrefix) => {
-      return keyForDepartment(department, keyPrefix, (key) => {
-
-        helpers.configureMomentOpts();
-        return client.lrange(key, 0, maxListSize, (err, result) => {
-          const enhancedResults = _.map(result, (i: string) => {
-            const item = JSON.parse(i);
-            item.RcvTimeSFO = moment.unix(item.RcvTime).tz("America/Los_Angeles").toString();
-            item.RcvTimeMEL = moment.unix(item.RcvTime).tz("Australia/Melbourne").toString();
-            item.timeAgo = moment(item.RcvTime * 1000).fromNow();
-            return item;
-          });
-          return callback(err, enhancedResults);
+    return domain.heartbeatKeyForTypeOfDepartment(type, department, (key) => {
+      helpers.configureMomentOpts();
+      return client.lrange(key, 0, maxListSize, (err, result) => {
+        const enhancedResults = _.map(result, (i: string) => {
+          const item = JSON.parse(i);
+          item.RcvTimeSFO = moment.unix(item.RcvTime).tz("America/Los_Angeles").toString();
+          item.RcvTimeMEL = moment.unix(item.RcvTime).tz("Australia/Melbourne").toString();
+          item.timeAgo = moment(item.RcvTime * 1000).fromNow();
+          return item;
         });
+        return callback(err, enhancedResults);
       });
     });
   }
@@ -180,21 +112,10 @@ module.exports = function module(dependencies: any) {
     });
   }
 
-  function defaultMessage(): IHeartbeatMessage {
-    const receivedTime = new Date().valueOf() / 1000;
-    return {
-      Message: "",
-      RcvTime: receivedTime,
-      Status: "OK",
-      Time: `${receivedTime}`,
-    };
-  }
-
   return {
     checkDepartment,
     checkDepartments,
-    defaultMessage,
-    heartbeatFromMessage,
+    defaultMessage: domain.defaultMessage,
     log,
   };
 };
