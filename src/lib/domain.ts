@@ -1,4 +1,6 @@
 declare interface IDomainModule {
+  canLogInterfaceVersion(type: string, callback: Resolve<boolean>): void;
+
   defaultMessage(): IHeartbeatMessage;
 
   keyForHeartbeat(type: string, callback: Resolve<string>): void;
@@ -6,6 +8,8 @@ declare interface IDomainModule {
 
   heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>): void;
   heartbeatKeyForTypeOfDepartment(type: string, department: any, callback: Resolve<RedisKey>): void;
+
+  interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion): void;
 }
 
 declare interface IHeartbeatMessage {
@@ -17,6 +21,8 @@ declare interface IHeartbeatMessage {
 
 declare type RedisKey = string;
 declare type InterfaceVersion = string;
+
+declare type ResolveInterfaceVersion = (version: InterfaceVersion, key: RedisKey) => void;
 
 module.exports = function domainModule() {
   const _ = require("lodash");
@@ -79,6 +85,19 @@ module.exports = function domainModule() {
     }
 
     return extractVersion(message.Interface, defaultVersion, callback);
+  }
+
+  function interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion) {
+    return interfaceVersionKey(department, (key) => {
+      return interfaceVersionFromMessage(message, (interfaceVersion) => {
+        return callback(interfaceVersion, key);
+      });
+    });
+  }
+
+  function canLogInterfaceVersion(type: string, callback: Resolve<boolean>) {
+    const canLog = _.isString(type) && (type === "incident");
+    return callback(canLog, true);
   }
 
   function extractVersion(text: string, defaultVersion: string, callback: Resolve<InterfaceVersion>) {
@@ -150,10 +169,12 @@ module.exports = function domainModule() {
   }
 
   return {
+    canLogInterfaceVersion,
     defaultMessage,
     extractVersion,
     heartbeatFromMessage,
     heartbeatKeyForTypeOfDepartment,
+    interfaceVersionForDepartment,
     interfaceVersionFromMessage,
     interfaceVersionKey,
     keyForDepartment,

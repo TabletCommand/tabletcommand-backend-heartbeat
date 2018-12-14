@@ -30,10 +30,30 @@ module.exports = function module(dependencies: any) {
       // we're limiting the list to maxListSize items instead
       return domain.heartbeatFromMessage(message, (msg) => {
         return storeHeartbeat(key, msg, (err) => {
-          return callback(err);
+          if (err) {
+            return callback(err);
+          }
+
+          return logInterfaceVersion(department, message, type, callback);
         });
       });
     });
+  }
+
+  function logInterfaceVersion(department: any, message: any, type: string, callback: CallbackErr) {
+    return domain.canLogInterfaceVersion(type, (canLog) => {
+      if (!canLog) {
+        return callback(null);
+      }
+
+      return domain.interfaceVersionForDepartment(department, message, (interfaceVersion, key) => {
+        return storeInterfaceVersion(key, interfaceVersion, callback);
+      });
+    });
+  }
+
+  function storeInterfaceVersion(key: RedisKey, version: InterfaceVersion, callback: CallbackErr) {
+    return client.set(key, version, callback);
   }
 
   function storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr) {
