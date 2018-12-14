@@ -68,7 +68,51 @@ module.exports = function domainModule() {
   }
 
   function interfaceVersionFromMessage(message: any, callback: Resolve<InterfaceVersion>) {
-    return callback("", true);
+    const resolved = false;
+    const defaultVersion = "Unknown";
+    if (!_.isObject(message)) {
+      return callback(defaultVersion, resolved);
+    }
+
+    if (!_.isString(message.Interface)) {
+      return callback(defaultVersion, resolved);
+    }
+
+    return extractVersion(message.Interface, defaultVersion, callback);
+  }
+
+  function extractVersion(text: string, defaultVersion: string, callback: Resolve<InterfaceVersion>) {
+    let resolved = false;
+    if (_.trim(text) === "") {
+      return callback(defaultVersion, resolved);
+    }
+
+    const cleanup = [
+      /JSON.message.by/,
+      /Simple-Track/,
+      /Tablet.Command.Inc/,
+      /Tablet.Command/g,
+      /Comment$/,
+      /Incident$/,
+      /Units$/,
+      /Units$/,
+      /Incident.Complete$/,
+    ];
+
+    let clean = text;
+    cleanup.forEach((regex) => {
+      clean = clean.replace(regex, "");
+    });
+
+    const parts = clean.split(" ");
+    const removed = parts.filter((item) => {
+      const trimmed = _.trim(item);
+      return trimmed !== "" && trimmed !== "-";
+    });
+
+    resolved = true;
+
+    return callback(removed.join(" "), resolved);
   }
 
   function heartbeatKeyForTypeOfDepartment(type: string, department: any, callback: Resolve<RedisKey>) {
@@ -107,6 +151,7 @@ module.exports = function domainModule() {
 
   return {
     defaultMessage,
+    extractVersion,
     heartbeatFromMessage,
     heartbeatKeyForTypeOfDepartment,
     interfaceVersionFromMessage,
