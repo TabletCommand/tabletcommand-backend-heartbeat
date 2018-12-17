@@ -21,10 +21,6 @@ module.exports = function module(dependencies: any) {
       return callback(null);
     }
 
-    if (!helpers.itemIsTrue(department, "heartbeatEnabled")) {
-      return callback(null);
-    }
-
     return domain.heartbeatKeyForTypeOfDepartment(type, department, (key) => {
       // Log Heartbeat cannot expire keys, because we'd lose the last message
       // we're limiting the list to maxListSize items instead
