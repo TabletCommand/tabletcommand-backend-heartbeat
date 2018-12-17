@@ -10,6 +10,7 @@ declare interface IDomainModule {
   heartbeatKeyForTypeOfDepartment(type: string, department: any, callback: Resolve<RedisKey>): void;
 
   interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion): void;
+  interfaceVersionKey(department: any, callback: Resolve<RedisKey>): void;
 }
 
 declare interface IHeartbeatMessage {

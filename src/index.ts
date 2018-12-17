@@ -79,12 +79,25 @@ module.exports = function module(dependencies: any) {
     });
   }
 
+  function getInterfaceVersion(department: any, callback: Callback<InterfaceVersion>) {
+    return domain.interfaceVersionKey(department, (key) => {
+      return client.get(key, (err, result) => {
+        let version = "";
+        if (_.isString(result)) {
+          version = result;
+        }
+        return callback(err, version);
+      });
+    });
+  }
+
   function checkDepartment(department: any, callback: Callback<any>) {
     if (!_.isObject(department.heartbeat)) {
       department.heartbeat = {
         incident: [],
         location: [],
         status: [],
+        version: "",
       };
     }
 
@@ -101,8 +114,14 @@ module.exports = function module(dependencies: any) {
         department.heartbeat.status = status;
 
         return heartbeatItems(department, "location", (errLocation, location) => {
+          if (errLocation) {
+            return callback(errLocation, department);
+          }
           department.heartbeat.location = location;
-          return callback(errLocation, department);
+          return getInterfaceVersion(department, (errVersion, version) => {
+            department.heartbeat.version = version;
+            return callback(errVersion, department);
+          });
         });
       });
     });
