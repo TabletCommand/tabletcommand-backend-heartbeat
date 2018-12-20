@@ -23,7 +23,7 @@ declare interface IHeartbeatMessage {
 declare type RedisKey = string;
 declare type InterfaceVersion = string;
 
-declare type ResolveInterfaceVersion = (version: InterfaceVersion, key: RedisKey) => void;
+declare type ResolveInterfaceVersion = (version: InterfaceVersion, key: RedisKey, resolved: boolean) => void;
 
 module.exports = function domainModule() {
   const _ = require("lodash");
@@ -90,8 +90,8 @@ module.exports = function domainModule() {
 
   function interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion) {
     return interfaceVersionKey(department, (key) => {
-      return interfaceVersionFromMessage(message, (interfaceVersion) => {
-        return callback(interfaceVersion, key);
+      return interfaceVersionFromMessage(message, (interfaceVersion, resolved) => {
+        return callback(interfaceVersion, key, resolved);
       });
     });
   }

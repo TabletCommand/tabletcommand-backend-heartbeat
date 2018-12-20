@@ -42,7 +42,11 @@ module.exports = function module(dependencies: any) {
         return callback(null);
       }
 
-      return domain.interfaceVersionForDepartment(department, message, (interfaceVersion, key) => {
+      return domain.interfaceVersionForDepartment(department, message, (interfaceVersion, key, resolved) => {
+        if (!resolved) {
+          return callback(null);
+        }
+
         return storeInterfaceVersion(key, interfaceVersion, callback);
       });
     });
@@ -152,5 +156,6 @@ module.exports = function module(dependencies: any) {
     checkDepartments,
     defaultMessage: domain.defaultMessage,
     log,
+    logInterfaceVersion,
   };
 };
