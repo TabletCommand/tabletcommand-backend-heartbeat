@@ -3,6 +3,7 @@
 /// <reference types="./lib/globals.d.ts" />
 /// <reference types="redis" />
 import * as redis from "redis";
+import { IEnhancedHeartbeat, IStoreModule } from "./lib/store";
 
 module.exports = function module(dependencies: any) {
   const client = dependencies.redisClient as redis.RedisClient;
@@ -13,8 +14,9 @@ module.exports = function module(dependencies: any) {
   const helpers = require("tabletcommand-middleware").helpers;
 
   const domain = require("./lib/domain")() as IDomainModule;
-
-  const maxListSize: number = 30;
+  const store = require("./lib/store")({
+    client,
+  }) as IStoreModule;
 
   function log(department: any, message: any, type: string, callback: CallbackErr) {
     if (!_.isObject(department)) {
@@ -25,7 +27,7 @@ module.exports = function module(dependencies: any) {
       // Log Heartbeat cannot expire keys, because we'd lose the last message
       // we're limiting the list to maxListSize items instead
       return domain.heartbeatFromMessage(message, (msg) => {
-        return storeHeartbeat(key, msg, (err) => {
+        return store.storeHeartbeat(key, msg, (err) => {
           if (err) {
             return callback(err);
           }
@@ -47,32 +49,16 @@ module.exports = function module(dependencies: any) {
           return callback(null);
         }
 
-        return storeInterfaceVersion(key, interfaceVersion, callback);
+        return store.storeInterfaceVersion(key, interfaceVersion, callback);
       });
     });
   }
 
-  function storeInterfaceVersion(key: RedisKey, version: InterfaceVersion, callback: CallbackErr) {
-    return client.set(key, version, callback);
-  }
-
-  function storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr) {
-    return client.lpush(key, JSON.stringify(msg), (lpushErr) => {
-      if (lpushErr) {
-        return callback(lpushErr);
-      }
-      return client.ltrim(key, 0, maxListSize - 1, (ltrimErr) => {
-        return callback(ltrimErr);
-      });
-    });
-  }
-
-  function heartbeatItems(department: any, type: string, callback: Callback<any[]>) {
+  function heartbeatItems(department: any, type: string, callback: Callback<[IEnhancedHeartbeat]>) {
     return domain.heartbeatKeyForTypeOfDepartment(type, department, (key) => {
       helpers.configureMomentOpts();
-      return client.lrange(key, 0, maxListSize, (err, result) => {
-        const enhancedResults = _.map(result, (i: string) => {
-          const item = JSON.parse(i);
+      return store.getHeartbeats(key, (err, decodedItems) => {
+        const enhancedResults: [IEnhancedHeartbeat] = _.map(decodedItems, (item: IEnhancedHeartbeat) => {
           item.RcvTimeSFO = moment.unix(item.RcvTime).tz("America/Los_Angeles").toString();
           item.RcvTimeMEL = moment.unix(item.RcvTime).tz("Australia/Melbourne").toString();
           item.timeAgo = moment(item.RcvTime * 1000).fromNow();
@@ -85,13 +71,7 @@ module.exports = function module(dependencies: any) {
 
   function getInterfaceVersion(department: any, callback: Callback<InterfaceVersion>) {
     return domain.interfaceVersionKey(department, (key) => {
-      return client.get(key, (err, result) => {
-        let version = "";
-        if (_.isString(result)) {
-          version = result;
-        }
-        return callback(err, version);
-      });
+      return store.getInterfaceVersion(key, callback);
     });
   }
 
