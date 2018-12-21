@@ -5,8 +5,12 @@
 import * as redis from "redis";
 import { IEnhancedHeartbeat, IStoreModule } from "./lib/store";
 
-module.exports = function module(dependencies: any) {
-  const client = dependencies.redisClient as redis.RedisClient;
+export declare interface IModuleDependency {
+  redisClient: redis.RedisClient;
+}
+
+module.exports = function module(dependencies: IModuleDependency) {
+  const client = dependencies.redisClient;
 
   const _ = require("lodash");
   const moment = require("moment-timezone");
@@ -115,7 +119,7 @@ module.exports = function module(dependencies: any) {
     return checkHeartbeats(items, 0, [], callback);
   }
 
-  function checkHeartbeats(items: any[], index: number, storage: any[], callback: Callback<any[]>): any {
+  function checkHeartbeats(items: any[], index: number, storage: any[], callback: Callback<any[]>): void {
     if (index >= _.size(items)) {
       return callback(null, storage);
     }

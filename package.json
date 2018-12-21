@@ -20,7 +20,8 @@
   "dependencies": {
     "debug": "^3.1.0",
     "lodash": "^4.16.4",
-    "moment-timezone": "^0.5.6"
+    "moment-timezone": "^0.5.6",
+    "tabletcommand-middleware": "^4.6.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
