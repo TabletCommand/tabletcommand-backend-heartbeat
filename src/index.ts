@@ -15,8 +15,6 @@ module.exports = function module(dependencies: IModuleDependency) {
   const _ = require("lodash");
   const moment = require("moment-timezone");
 
-  const helpers = require("tabletcommand-middleware").helpers;
-
   const domain = require("./lib/domain")() as IDomainModule;
   const store = require("./lib/store")({
     client,
@@ -58,9 +56,32 @@ module.exports = function module(dependencies: IModuleDependency) {
     });
   }
 
+  function configureOpts() {
+    moment.updateLocale("en", {
+      // tslint:disable:object-literal-sort-keys
+      relativeTime: {
+        future: "in %s",
+        past: "%s ago",
+        s: "%ds",
+        ss: "%ds",
+        m: "%dmin",
+        mm: "%dmin",
+        h: "%dh",
+        hh: "%dh",
+        d: "%dd",
+        dd: "%dd",
+        M: "%dmon",
+        MM: "%dmon",
+        y: "%dy",
+        yy: "%dy",
+      },
+      // tslint:enable:object-literal-sort-keys
+    });
+  }
+
   function heartbeatItems(department: any, type: string, callback: Callback<[IEnhancedHeartbeat]>) {
     return domain.heartbeatKeyForTypeOfDepartment(type, department, (key) => {
-      helpers.configureMomentOpts();
+      configureOpts();
       return store.getHeartbeats(key, (err, decodedItems) => {
         const enhancedResults: [IEnhancedHeartbeat] = _.map(decodedItems, (item: IEnhancedHeartbeat) => {
           item.RcvTimeSFO = moment.unix(item.RcvTime).tz("America/Los_Angeles").toString();
