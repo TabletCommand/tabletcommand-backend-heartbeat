@@ -156,11 +156,20 @@ module.exports = function module(dependencies: IModuleDependency) {
     });
   }
 
+  function conditionalLog(shouldLog: boolean, department: any, message: any, type: string, callback: CallbackErr) {
+    if (!shouldLog) {
+      return callback(null);
+    }
+
+    return log(department, message, type, callback);
+  }
+
   return {
     checkDepartment,
     checkDepartments,
     defaultMessage: domain.defaultMessage,
     log,
+    conditionalLog,
     logInterfaceVersion,
   };
 };
