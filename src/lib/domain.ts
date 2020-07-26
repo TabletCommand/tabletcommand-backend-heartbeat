@@ -164,7 +164,7 @@ module.exports = function domainModule() {
       }
     }
 
-    const msg = _.pick(message, ["Time", "Status", "Message"]);
+    const msg = _.pick(message, ["Time", "Status", "Message", "RcvTime"]);
     msg.RcvTime = new Date().getTime() / 1000.0;
     return callback(msg, true);
   }

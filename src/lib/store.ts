@@ -1,12 +1,13 @@
 
 import * as redis from "redis";
+import _ from "lodash";
 
 export declare interface IStoreDependency {
   client: redis.RedisClient;
 }
 
 export declare interface IStoreModule {
-  getHeartbeats(key: RedisKey, callback: Callback<[IStoredHeartbeat]>): void;
+  getHeartbeats(key: RedisKey, callback: Callback<IStoredHeartbeat[]>): void;
   getInterfaceVersion(key: RedisKey, callback: Callback<InterfaceVersion>): void;
   storeInterfaceVersion(key: RedisKey, version: InterfaceVersion, callback: CallbackErr): void;
   storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr): void;
@@ -24,8 +25,6 @@ export declare interface IEnhancedHeartbeat {
 }
 
 module.exports = function storeModule(dependencies: IStoreDependency): IStoreModule {
-  const _ = require("lodash");
-
   const client = dependencies.client;
 
   const maxListSize: number = 30;
@@ -55,10 +54,10 @@ module.exports = function storeModule(dependencies: IStoreDependency): IStoreMod
     });
   }
 
-  function getHeartbeats(key: RedisKey, callback: Callback<[IStoredHeartbeat]>) {
+  function getHeartbeats(key: RedisKey, callback: Callback<IStoredHeartbeat[]>) {
     return client.lrange(key, 0, maxListSize, (err, result) => {
       const decodedResults = _.map(result, (i: string) => {
-        return JSON.parse(i);
+        return JSON.parse(i) as IStoredHeartbeat;
       });
 
       return callback(err, decodedResults);

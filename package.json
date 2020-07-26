@@ -1,6 +1,6 @@
 {
   "name": "tabletcommand-backend-heartbeat",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Tablet Command Heartbeat",
   "main": "lib/index",
   "types": "lib/index",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/chai": "^4.2.8",
+    "@types/lodash": "^4.14.158",
     "@types/mocha": "^8.0.0",
     "@types/node": "^14.0.26",
     "@types/redis": "^2.8.14",
