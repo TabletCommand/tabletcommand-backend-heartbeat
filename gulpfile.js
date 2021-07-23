@@ -1,37 +1,26 @@
 const gulp = require("gulp");
-const gulpTslint = require("gulp-tslint");
-const tslint = require("tslint");
+const shell = require("gulp-shell")
 const mocha = require("gulp-mocha");
-const ts = require("gulp-typescript");
-const tsProject = ts.createProject("tsconfig.json");
+const del = require("del");
 
-gulp.task("tslint", function tslintTask() {
-  const program = tslint.Linter.createProgram("./tsconfig.json");
-  const sources = [
-    "*.ts",
-    "src/**/*.ts"
-  ];
-  return gulp.src(sources)
-    .pipe(gulpTslint({
-      formatter: "verbose",
-      program: program
-    }))
-    .pipe(gulpTslint.report());
+gulp.task("clean", function cleanTask() {
+  return del([
+    "build/**",
+    "definitions/**"
+  ], {
+    force: true
+  });
 });
 
-gulp.task("lint", gulp.series("tslint"));
+gulp.task("ts", gulp.series("clean", shell.task("tsc -p .\\/src")));
 
-gulp.task("build", gulp.series("lint", function buildTask() {
-  return tsProject.src()
-    .pipe(tsProject())
-    .js.pipe(gulp.dest("lib"));
-}));
+gulp.task("lint", gulp.series(shell.task("eslint .\\/src")));
 
-gulp.task("test", gulp.series("build", function buildTask() {
-  var tests = [
+gulp.task("test", gulp.series("lint", function testTask() {
+  const tests = [
     "test/*.js"
   ];
-  var srcOpts = {
+  const srcOpts = {
     read: false
   };
   return gulp.src(tests, srcOpts)
@@ -40,6 +29,8 @@ gulp.task("test", gulp.series("build", function buildTask() {
     }));
 }));
 
-gulp.task("default", gulp.series("build", function defaultTask(done) {
-  return done();
-}));
+gulp.task("watch", gulp.series("clean", shell.task("tsc -p .\\/src --watch")));
+
+gulp.task("build", gulp.series("lint", "ts"));
+
+gulp.task("default", gulp.series("test"));

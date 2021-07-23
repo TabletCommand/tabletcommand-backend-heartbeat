@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "declaration": true,
+    "declarationDir": "../definitions",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "outDir": "../build",
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true 
+  }
+}
