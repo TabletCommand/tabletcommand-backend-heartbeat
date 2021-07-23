@@ -18,8 +18,15 @@ export interface HeartbeatMessage {
     Message: string;
     RcvTime: number;
 }
+export interface Unit {
+    TimeArrived?: string;
+    TimeEnroute?: string;
+    TimeDispatched?: string;
+}
 export interface IncomingHeartbeatMessage extends HeartbeatMessage {
-    Unit?: unknown[];
+    Interface?: string;
+    Unit?: Unit[];
+    unit?: Unit[];
     EntryDateTime?: string;
 }
 export declare type RedisKey = string;

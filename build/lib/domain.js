@@ -55,32 +55,6 @@ function domain() {
         var result = keyForDepartment(department, "cad:v");
         return result;
     }
-    function interfaceVersionFromMessage(message) {
-        var defaultVersion = "Unknown";
-        if (!lodash_1.default.isObject(message)) {
-            return {
-                resolved: false,
-                version: defaultVersion,
-            };
-        }
-        var msgInterface = "";
-        if (lodash_1.default.isString(message.Interface)) {
-            msgInterface = message.Interface;
-        }
-        return extractVersion(msgInterface, defaultVersion);
-    }
-    function interfaceVersionForDepartment(department, message) {
-        var key = interfaceVersionKey(department).key;
-        var _a = interfaceVersionFromMessage(message), interfaceVersion = _a.version, resolved = _a.resolved;
-        return {
-            version: interfaceVersion,
-            key: key,
-            resolved: resolved
-        };
-    }
-    function canLogInterfaceVersion(type) {
-        return lodash_1.default.isString(type) && (type === "incident");
-    }
     function extractVersion(text, defaultVersion) {
         if (lodash_1.default.trim(text) === "") {
             return {
@@ -112,6 +86,32 @@ function domain() {
             version: removed.join(" "),
             resolved: true,
         };
+    }
+    function interfaceVersionFromMessage(message) {
+        var defaultVersion = "Unknown";
+        if (!lodash_1.default.isObject(message)) {
+            return {
+                resolved: false,
+                version: defaultVersion,
+            };
+        }
+        var msgInterface = "";
+        if (lodash_1.default.isString(message.Interface)) {
+            msgInterface = message.Interface;
+        }
+        return extractVersion(msgInterface, defaultVersion);
+    }
+    function interfaceVersionForDepartment(department, message) {
+        var key = interfaceVersionKey(department).key;
+        var _a = interfaceVersionFromMessage(message), interfaceVersion = _a.version, resolved = _a.resolved;
+        return {
+            version: interfaceVersion,
+            key: key,
+            resolved: resolved
+        };
+    }
+    function canLogInterfaceVersion(type) {
+        return lodash_1.default.isString(type) && (type === "incident");
     }
     function heartbeatKeyForTypeOfDepartment(type, department) {
         var keyPrefix = keyForHeartbeat(type).keyPrefix;

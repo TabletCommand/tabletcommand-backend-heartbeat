@@ -56,45 +56,9 @@ export default function domain() {
     };
   }
 
-  function interfaceVersionKey(department: any) {
+  function interfaceVersionKey(department: Department) {
     const result = keyForDepartment(department, "cad:v");
     return result;
-  }
-
-  function interfaceVersionFromMessage(message: unknown) {
-    const defaultVersion = "Unknown";
-    if (!_.isObject(message)) {
-      return {
-        resolved: false,
-        version: defaultVersion,
-      };
-    }
-
-    let msgInterface = "";
-    if (_.isString((message as Record<string, unknown>).Interface)) {
-      msgInterface = (message as Record<string, unknown>).Interface as string;
-    }
-
-    return extractVersion(msgInterface, defaultVersion);
-  }
-
-  function interfaceVersionForDepartment(department: Department, message: unknown): ResolveInterfaceVersion {
-    const { 
-      key,
-    } = interfaceVersionKey(department);
-    const {
-      version: interfaceVersion,
-      resolved
-    } = interfaceVersionFromMessage(message);
-    return {
-      version: interfaceVersion,
-      key,
-      resolved
-    };
-  }
-
-  function canLogInterfaceVersion(type: string): boolean {
-    return _.isString(type) && (type === "incident");
   }
 
   function extractVersion(text: string, defaultVersion: string) {
@@ -134,6 +98,42 @@ export default function domain() {
     };
   }
 
+  function interfaceVersionFromMessage(message: IncomingHeartbeatMessage) {
+    const defaultVersion = "Unknown";
+    if (!_.isObject(message)) {
+      return {
+        resolved: false,
+        version: defaultVersion,
+      };
+    }
+
+    let msgInterface = "";
+    if (_.isString(message.Interface)) {
+      msgInterface = message.Interface;
+    }
+
+    return extractVersion(msgInterface, defaultVersion);
+  }
+
+  function interfaceVersionForDepartment(department: Department, message: IncomingHeartbeatMessage): ResolveInterfaceVersion {
+    const { 
+      key,
+    } = interfaceVersionKey(department);
+    const {
+      version: interfaceVersion,
+      resolved
+    } = interfaceVersionFromMessage(message);
+    return {
+      version: interfaceVersion,
+      key,
+      resolved
+    };
+  }
+
+  function canLogInterfaceVersion(type: string): boolean {
+    return _.isString(type) && (type === "incident");
+  }
+
   function heartbeatKeyForTypeOfDepartment(type: string, department: Department) {
     const {
       keyPrefix
@@ -146,7 +146,7 @@ export default function domain() {
       // If no .Time provided, peek into .Unit
       if (_.isArray(message.Unit)) {
         let unitTime = null;
-        _.each(message.Unit, (unit: any) => {
+        _.each(message.Unit, (unit) => {
           if (_.isString(unit.TimeArrived)) {
             unitTime = unit.TimeArrived;
           } else if (_.isString(unit.TimeEnroute)) {

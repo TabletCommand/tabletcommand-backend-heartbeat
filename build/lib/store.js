@@ -44,13 +44,14 @@ var util_1 = require("util");
 function libStore(dependencies) {
     var client = dependencies.client;
     var maxListSize = 30;
-    var clientGet = util_1.promisify(client.get).bind(client);
-    var clientSet = util_1.promisify(client.set).bind(client);
+    // try this: const getAsync = util.promisify<string|undefined>(this.redisClient.get.bind(this.redisClient)) – Ivan V. Mar 4 at 10:08
+    var clientGet = util_1.promisify(client.get.bind(client));
+    var clientSet = util_1.promisify(client.set.bind(client));
     // Hack for TS not recognizing the type
     // https://stackoverflow.com/questions/62320989/error-in-redis-client-del-function-with-typescript
-    var clientLPush = util_1.promisify(client.lpush).bind(client);
-    var clientLTrim = util_1.promisify(client.ltrim).bind(client);
-    var clientLRange = util_1.promisify(client.lrange).bind(client);
+    var clientLPush = util_1.promisify(client.lpush.bind(client));
+    var clientLTrim = util_1.promisify(client.ltrim.bind(client));
+    var clientLRange = util_1.promisify(client.lrange.bind(client));
     function storeInterfaceVersion(key, version) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {

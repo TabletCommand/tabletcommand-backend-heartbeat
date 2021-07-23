@@ -26,6 +26,24 @@ module.exports = function module(dependencies: {
     client,
   });
 
+  async function logInterfaceVersion(department: Department, message: IncomingHeartbeatMessage, type: string) {
+    const canLog = domain.canLogInterfaceVersion(type);
+    if (!canLog) {
+      return;
+    }
+
+    const {
+      version: interfaceVersion,
+      key,
+      resolved,
+    } = domain.interfaceVersionForDepartment(department, message);
+    if (!resolved) {
+      return;
+    }
+
+    return await store.storeInterfaceVersion(key, interfaceVersion);
+  }
+
   async function log(department?: Department, message?: IncomingHeartbeatMessage, type?: string) {
     if (!_.isObject(department)) {
       return;
@@ -48,24 +66,6 @@ module.exports = function module(dependencies: {
     } catch (error) {
       console.log("Failed to log heartbeat", message, "for", department, "type", type);
     }
-  }
-
-  async function logInterfaceVersion(department: Department, message: unknown, type: string) {
-    const canLog = domain.canLogInterfaceVersion(type);
-    if (!canLog) {
-      return;
-    }
-
-    const {
-      version: interfaceVersion,
-      key,
-      resolved,
-    } = domain.interfaceVersionForDepartment(department, message);
-    if (!resolved) {
-      return;
-    }
-
-    return await store.storeInterfaceVersion(key, interfaceVersion);
   }
 
   function configureOpts() {
@@ -145,10 +145,6 @@ module.exports = function module(dependencies: {
     return department;
   }
 
-  async function checkDepartments(items: Department[]) {
-    return checkHeartbeats(items);
-  }
-
   async function checkHeartbeats(items: Department[]): Promise<Department[]> {
     const storage: Department[] = [];
     for (const item of items) {
@@ -156,6 +152,10 @@ module.exports = function module(dependencies: {
       storage.push(department);
     }
     return storage;
+  }
+
+  async function checkDepartments(items: Department[]) {
+    return checkHeartbeats(items);
   }
 
   async function conditionalLog(shouldLog: boolean, department?: Department, message?: IncomingHeartbeatMessage, type?: string) {

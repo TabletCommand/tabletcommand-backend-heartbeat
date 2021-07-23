@@ -14,15 +14,17 @@ export default function libStore(dependencies: {
   client: redis.RedisClient,
 }) {
   const { client } = dependencies;
-  const maxListSize: number = 30;
+  const maxListSize = 30;
 
-  const clientGet = promisify(client.get).bind(client);
-  const clientSet = promisify(client.set).bind(client);
+  // try this: const getAsync = util.promisify<string|undefined>(this.redisClient.get.bind(this.redisClient)) – Ivan V. Mar 4 at 10:08
+
+  const clientGet = promisify(client.get.bind(client));
+  const clientSet = promisify(client.set.bind(client));
   // Hack for TS not recognizing the type
   // https://stackoverflow.com/questions/62320989/error-in-redis-client-del-function-with-typescript
-  const clientLPush = promisify(client.lpush).bind(client) as (arg0: string, arg1: string) => Promise<number>;
-  const clientLTrim = promisify(client.ltrim).bind(client);
-  const clientLRange = promisify(client.lrange).bind(client);
+  const clientLPush = promisify(client.lpush.bind(client)) as (arg0: string, arg1: string) => Promise<number>;
+  const clientLTrim = promisify(client.ltrim.bind(client));
+  const clientLRange = promisify(client.lrange.bind(client));
 
   async function storeInterfaceVersion(key: RedisKey, version: InterfaceVersion) {
     return clientSet(key, version);

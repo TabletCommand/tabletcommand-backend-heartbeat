@@ -49,6 +49,26 @@ module.exports = function module(dependencies) {
     var store = store_1.default({
         client: client,
     });
+    function logInterfaceVersion(department, message, type) {
+        return __awaiter(this, void 0, void 0, function () {
+            var canLog, _a, interfaceVersion, key, resolved;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        canLog = domain.canLogInterfaceVersion(type);
+                        if (!canLog) {
+                            return [2 /*return*/];
+                        }
+                        _a = domain.interfaceVersionForDepartment(department, message), interfaceVersion = _a.version, key = _a.key, resolved = _a.resolved;
+                        if (!resolved) {
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, store.storeInterfaceVersion(key, interfaceVersion)];
+                    case 1: return [2 /*return*/, _b.sent()];
+                }
+            });
+        });
+    }
     function log(department, message, type) {
         return __awaiter(this, void 0, void 0, function () {
             var key, msg, error_1;
@@ -78,26 +98,6 @@ module.exports = function module(dependencies) {
                         console.log("Failed to log heartbeat", message, "for", department, "type", type);
                         return [3 /*break*/, 5];
                     case 5: return [2 /*return*/];
-                }
-            });
-        });
-    }
-    function logInterfaceVersion(department, message, type) {
-        return __awaiter(this, void 0, void 0, function () {
-            var canLog, _a, interfaceVersion, key, resolved;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        canLog = domain.canLogInterfaceVersion(type);
-                        if (!canLog) {
-                            return [2 /*return*/];
-                        }
-                        _a = domain.interfaceVersionForDepartment(department, message), interfaceVersion = _a.version, key = _a.key, resolved = _a.resolved;
-                        if (!resolved) {
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, store.storeInterfaceVersion(key, interfaceVersion)];
-                    case 1: return [2 /*return*/, _b.sent()];
                 }
             });
         });
@@ -208,13 +208,6 @@ module.exports = function module(dependencies) {
             });
         });
     }
-    function checkDepartments(items) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, checkHeartbeats(items)];
-            });
-        });
-    }
     function checkHeartbeats(items) {
         return __awaiter(this, void 0, void 0, function () {
             var storage, _i, items_1, item, department;
@@ -237,6 +230,13 @@ module.exports = function module(dependencies) {
                         return [3 /*break*/, 1];
                     case 4: return [2 /*return*/, storage];
                 }
+            });
+        });
+    }
+    function checkDepartments(items) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, checkHeartbeats(items)];
             });
         });
     }

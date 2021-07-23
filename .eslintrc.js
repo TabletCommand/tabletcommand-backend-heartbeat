@@ -44,17 +44,6 @@ module.exports = {
       {
         checksVoidReturn: false
       }
-    ],
-
-    // Temp disable
-    "@typescript-eslint/no-explicit-any": 0,
-    "@typescript-eslint/no-inferrable-types": 0,
-    "@typescript-eslint/no-unsafe-assignment": 0,
-    "@typescript-eslint/no-unsafe-call": 0,
-    "@typescript-eslint/no-unsafe-member-access": 0,
-    "@typescript-eslint/no-unused-vars": 0,
-    "@typescript-eslint/no-use-before-define": 0,
-    "@typescript-eslint/no-var-requires": 0,
-    "@typescript-eslint/unbound-method": 0
+    ]
   }
 };

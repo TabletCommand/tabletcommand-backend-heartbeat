@@ -11,12 +11,12 @@ export default function domain(): {
         key: string;
         resolved: boolean;
     };
-    interfaceVersionForDepartment: (department: Department, message: unknown) => ResolveInterfaceVersion;
-    interfaceVersionFromMessage: (message: unknown) => {
-        resolved: boolean;
+    interfaceVersionForDepartment: (department: Department, message: IncomingHeartbeatMessage) => ResolveInterfaceVersion;
+    interfaceVersionFromMessage: (message: IncomingHeartbeatMessage) => {
         version: string;
+        resolved: boolean;
     };
-    interfaceVersionKey: (department: any) => {
+    interfaceVersionKey: (department: Department) => {
         key: string;
         resolved: boolean;
     };
