@@ -10,7 +10,7 @@ module.exports = function domainModule() {
             Time: "" + receivedTime,
         };
     }
-    function keyForHeartbeat(type, callback) {
+    function keyForHeartbeat(type) {
         var keyPrefix = "hb:x";
         var resolved = false;
         if (type === "incident") {
@@ -25,7 +25,10 @@ module.exports = function domainModule() {
             keyPrefix = "hb:l";
             resolved = true;
         }
-        return callback(keyPrefix, resolved);
+        return {
+            keyPrefix: keyPrefix,
+            resolved: resolved
+        };
     }
     function keyForDepartment(department, prefix, callback) {
         var departmentId = "unknown";
@@ -95,9 +98,8 @@ module.exports = function domainModule() {
         return callback(removed.join(" "), resolved);
     }
     function heartbeatKeyForTypeOfDepartment(type, department, callback) {
-        return keyForHeartbeat(type, function (keyPrefix) {
-            return keyForDepartment(department, keyPrefix, callback);
-        });
+        var keyPrefix = keyForHeartbeat(type).keyPrefix;
+        return keyForDepartment(department, keyPrefix, callback);
     }
     function heartbeatFromMessage(message, callback) {
         if (!_.isString(message.Time)) {

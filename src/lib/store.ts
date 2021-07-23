@@ -25,7 +25,7 @@ export declare interface IEnhancedHeartbeat {
 }
 
 module.exports = function storeModule(dependencies: IStoreDependency): IStoreModule {
-  const client = dependencies.client;
+  const { client } = dependencies;
 
   const maxListSize: number = 30;
 

@@ -3,7 +3,7 @@ declare interface IDomainModule {
 
   defaultMessage(): IHeartbeatMessage;
 
-  keyForHeartbeat(type: string, callback: Resolve<string>): void;
+  keyForHeartbeat(type: string): HeartbeatKey;
   keyForDepartment(department: any, prefix: string, callback: Resolve<RedisKey>): void;
 
   heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>): void;
@@ -11,6 +11,11 @@ declare interface IDomainModule {
 
   interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion): void;
   interfaceVersionKey(department: any, callback: Resolve<RedisKey>): void;
+}
+
+declare interface HeartbeatKey {
+  keyPrefix: string;
+  resolved: boolean;
 }
 
 declare interface IHeartbeatMessage {
@@ -38,7 +43,7 @@ module.exports = function domainModule() {
     };
   }
 
-  function keyForHeartbeat(type: string, callback: Resolve<string>) {
+  function keyForHeartbeat(type: string) {
     let keyPrefix = "hb:x";
     let resolved = false;
     if (type === "incident") {
@@ -52,7 +57,10 @@ module.exports = function domainModule() {
       resolved = true;
     }
 
-    return callback(keyPrefix, resolved);
+    return {
+      keyPrefix,
+      resolved
+    };
   }
 
   function keyForDepartment(department: any, prefix: string, callback: Resolve<RedisKey>) {
@@ -136,9 +144,10 @@ module.exports = function domainModule() {
   }
 
   function heartbeatKeyForTypeOfDepartment(type: string, department: any, callback: Resolve<RedisKey>) {
-    return keyForHeartbeat(type, (keyPrefix) => {
-      return keyForDepartment(department, keyPrefix, callback);
-    });
+    const {
+      keyPrefix
+    } = keyForHeartbeat(type);
+    return keyForDepartment(department, keyPrefix, callback);
   }
 
   function heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>) {
