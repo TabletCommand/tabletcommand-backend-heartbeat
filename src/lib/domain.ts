@@ -1,16 +1,14 @@
 import _ from "lodash";
 
 import {
-  IHeartbeatMessage,
   Department,
-  HeartbeatKey,
-  InterfaceVersion,
-  RedisKey,
+  HeartbeatMessage,
+  IncomingHeartbeatMessage,
   ResolveInterfaceVersion,
 } from "./types";
 
 export default function domain() {
-  function defaultMessage(): IHeartbeatMessage {
+  function defaultMessage(): HeartbeatMessage {
     const receivedTime = new Date().valueOf() / 1000;
     return {
       Message: "",
@@ -143,7 +141,7 @@ export default function domain() {
     return keyForDepartment(department, keyPrefix);
   }
 
-  function heartbeatFromMessage(message: any): IHeartbeatMessage {
+  function heartbeatFromMessage(message: IncomingHeartbeatMessage): HeartbeatMessage {
     if (!_.isString(message.Time)) {
       // If no .Time provided, peek into .Unit
       if (_.isArray(message.Unit)) {

@@ -1,14 +1,13 @@
-
 import * as redis from "redis";
 import _ from "lodash";
 
-import * as util from "util";
+import { promisify } from "util";
 
 import {
   InterfaceVersion,
   RedisKey,
-  IHeartbeatMessage,
-  IStoredHeartbeat,
+  HeartbeatMessage,
+  StoredHeartbeat,
 } from "./types";
 
 export default function libStore(dependencies: {
@@ -17,42 +16,52 @@ export default function libStore(dependencies: {
   const { client } = dependencies;
   const maxListSize: number = 30;
 
-  const clientGet = util.promisify(client.get);
-  const clientSet = util.promisify(client.set);
+  const clientGet = promisify(client.get).bind(client);
+  const clientSet = promisify(client.set).bind(client);
+  // Hack for TS not recognizing the type
+  // https://stackoverflow.com/questions/62320989/error-in-redis-client-del-function-with-typescript
+  const clientLPush = promisify(client.lpush).bind(client) as (arg0: string, arg1: string) => Promise<number>;
+  const clientLTrim = promisify(client.ltrim).bind(client);
+  const clientLRange = promisify(client.lrange).bind(client);
 
   async function storeInterfaceVersion(key: RedisKey, version: InterfaceVersion) {
     return clientSet(key, version);
   }
 
-  function getInterfaceVersion(key: RedisKey, callback: Callback<InterfaceVersion>) {
-    return client.get(key, (err: Error | null, result: unknown) => {
-      let version = "";
-      if (_.isString(result)) {
-        version = result;
-      }
-      return callback(err, version);
-    });
+  async function getInterfaceVersion(key: RedisKey) {
+    let version = "";
+    const item = await clientGet(key);
+    if (item && _.isString(item)) {
+      version = item;
+    }
+    return version;
   }
 
-  function storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr) {
-    return client.lpush(key, JSON.stringify(msg), (lpushErr: Error | null) => {
-      if (lpushErr) {
-        return callback(lpushErr);
-      }
-      return client.ltrim(key, 0, maxListSize - 1, (ltrimErr: Error | null) => {
-        return callback(ltrimErr);
-      });
-    });
+  async function storeHeartbeat(key: RedisKey, msg: HeartbeatMessage) {
+    const msgStr = JSON.stringify(msg);
+    await clientLPush(key, msgStr);
+    await clientLTrim(key, 0, maxListSize - 1);
   }
 
-  function getHeartbeats(key: RedisKey, callback: Callback<unknown[]>) {
-    return client.lrange(key, 0, maxListSize, (err: Error | null, result: unknown[]) => {
-      const decodedResults = _.map(result, (i: string) => {
-        return JSON.parse(i) as IStoredHeartbeat;
-      });
-
-      return callback(err, decodedResults);
+  async function getHeartbeats(key: RedisKey) {
+    const results = await clientLRange(key, 0, maxListSize);
+    if (!_.isArray(results)) {
+      return [];
+    }
+    const decoded: StoredHeartbeat[] = [];
+    results.forEach((item) => {
+      if (!_.isString(item)) {
+        return;
+      }
+      try {
+        const asObject = JSON.parse(item) as StoredHeartbeat;
+        decoded.push(asObject);
+      } catch (error) {
+        console.log(`Could not parse ${item} as JSON.`);
+        return;
+      } 
     });
+    return decoded;
   }
 
   return {
@@ -61,6 +70,6 @@ export default function libStore(dependencies: {
     storeHeartbeat,
     storeInterfaceVersion,
   };
-};
+}
 
 export type StoreModule = ReturnType<typeof libStore>;

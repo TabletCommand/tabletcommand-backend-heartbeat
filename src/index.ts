@@ -8,19 +8,17 @@ import moment from "moment-timezone";
 
 import {
   Department,
-  IEnhancedHeartbeat,
-  IStoredHeartbeat,
-  InterfaceVersion,
+  EnhancedHeartbeat,
+  IncomingHeartbeatMessage,
+  StoredHeartbeat,
 } from "./lib/types";
-
-export declare interface IModuleDependency {
-  redisClient: redis.RedisClient;
-}
 
 import DomainModule from "./lib/domain";
 import StoreModule from "./lib/store";
 
-module.exports = function module(dependencies: IModuleDependency) {
+module.exports = function module(dependencies: {
+  redisClient: redis.RedisClient;
+}) {
   const { redisClient: client } = dependencies;
 
   const domain = DomainModule();
@@ -28,27 +26,28 @@ module.exports = function module(dependencies: IModuleDependency) {
     client,
   });
 
-  function log(department: Department, message: unknown, type: string, callback: CallbackErr) {
+  async function log(department?: Department, message?: IncomingHeartbeatMessage, type?: string) {
     if (!_.isObject(department)) {
-      return callback(null);
+      return;
+    }
+
+    if (!_.isString(message) || !_.isString(type)) {
+      return;
     }
 
     const {
       key,
-      resolved,
     } = domain.heartbeatKeyForTypeOfDepartment(type, department);
 
     // Log Heartbeat cannot expire keys, because we'd lose the last message
     // we're limiting the list to maxListSize items instead
     const msg = domain.heartbeatFromMessage(message);
-    return store.storeHeartbeat(key, msg, async (err: Error | null) => {
-      if (err) {
-        return callback(err);
-      }
-
+    try {
+      await store.storeHeartbeat(key, msg);
       await logInterfaceVersion(department, message, type);
-      return callback(null);
-    });
+    } catch (error) {
+      console.log("Failed to log heartbeat", message, "for", department, "type", type);
+    }
   }
 
   async function logInterfaceVersion(department: Department, message: unknown, type: string) {
@@ -92,28 +91,33 @@ module.exports = function module(dependencies: IModuleDependency) {
     });
   }
 
-  function heartbeatItems(department: Department, type: string, callback: Callback<[IEnhancedHeartbeat]>) {
+  async function heartbeatItems(department: Department, type: string): Promise<EnhancedHeartbeat[]> {
     const { key } = domain.heartbeatKeyForTypeOfDepartment(type, department);
     configureOpts();
-    return store.getHeartbeats(key, (err: Error | null, decodedItems: IStoredHeartbeat[]) => {
-      const enhancedResults: IEnhancedHeartbeat[] = _.map(decodedItems, (item: IEnhancedHeartbeat) => {
-        item.RcvTimeSFO = moment.unix(item.RcvTime).tz("America/Los_Angeles").toString();
-        item.RcvTimeMEL = moment.unix(item.RcvTime).tz("Australia/Melbourne").toString();
-        item.timeAgo = moment(item.RcvTime * 1000).fromNow();
-        return item;
-      });
-      return callback(err, enhancedResults);
+    const decodedItems = await store.getHeartbeats(key);
+    const enhancedResults: EnhancedHeartbeat[] = decodedItems.map((item: StoredHeartbeat) => {
+      const t = item.RcvTime;
+      const RcvTimeSFO = moment.unix(t).tz("America/Los_Angeles").toString();
+      const RcvTimeMEL = moment.unix(t).tz("Australia/Melbourne").toString();
+      const timeAgo = moment(t * 1000).fromNow();
+      return {
+        RcvTime: t,
+        RcvTimeMEL,
+        RcvTimeSFO,
+        timeAgo
+      };
     });
+    return enhancedResults;
   }
 
-  function getInterfaceVersion(department: Department, callback: Callback<InterfaceVersion>) {
+  async function getInterfaceVersion(department: Department) {
     const {
       key,
     } = domain.interfaceVersionKey(department);
-    return store.getInterfaceVersion(key, callback);
+    return await store.getInterfaceVersion(key);
   }
 
-  function checkDepartment(department: Department, callback: Callback<Department>) {
+  async function checkDepartment(department: Department) {
     if (!_.isObject(department.heartbeat)) {
       department.heartbeat = {
         incident: [],
@@ -123,58 +127,43 @@ module.exports = function module(dependencies: IModuleDependency) {
       };
     }
 
-    return heartbeatItems(department, "incident", (errIncident, incident) => {
-      if (errIncident) {
-        return callback(errIncident, department);
-      }
+    try {
+      const incident = await heartbeatItems(department, "incident");
       department.heartbeat.incident = incident;
+      
+      const status = await heartbeatItems(department, "status");
+      department.heartbeat.status = status;
 
-      return heartbeatItems(department, "status", (errStatus, status) => {
-        if (errStatus) {
-          return callback(errStatus, department);
-        }
-        department.heartbeat.status = status;
+      const location = await heartbeatItems(department, "location");
+      department.heartbeat.location = location;
 
-        return heartbeatItems(department, "location", (errLocation, location) => {
-          if (errLocation) {
-            return callback(errLocation, department);
-          }
-          department.heartbeat.location = location;
-          return getInterfaceVersion(department, (errVersion, version) => {
-            department.heartbeat.version = version;
-            return callback(errVersion, department);
-          });
-        });
-      });
-    });
-  }
-
-  function checkDepartments(items: any[], callback: Callback<any[]>) {
-    return checkHeartbeats(items, 0, [], callback);
-  }
-
-  function checkHeartbeats(items: Department[], index: number, storage: Department[], callback: Callback<Department[]>): void {
-    if (index >= _.size(items)) {
-      return callback(null, storage);
+      const version = await getInterfaceVersion(department);
+      department.heartbeat.version = version;
+    } catch (error) {
+      console.log("error loading items for department", department._id, error);
     }
-
-    const department = items[index];
-    return checkDepartment(department, (err, dept) => {
-      if (err) {
-        return callback(err, []);
-      }
-
-      storage.push(dept);
-      return checkHeartbeats(items, index + 1, storage, callback);
-    });
+    return department;
   }
 
-  function conditionalLog(shouldLog: boolean, department: any, message: any, type: string, callback: CallbackErr) {
+  async function checkDepartments(items: Department[]) {
+    return checkHeartbeats(items);
+  }
+
+  async function checkHeartbeats(items: Department[]): Promise<Department[]> {
+    const storage: Department[] = [];
+    for (const item of items) {
+      const department = await checkDepartment(item);
+      storage.push(department);
+    }
+    return storage;
+  }
+
+  async function conditionalLog(shouldLog: boolean, department?: Department, message?: IncomingHeartbeatMessage, type?: string) {
     if (!shouldLog) {
-      return callback(null);
+      return;
     }
 
-    return log(department, message, type, callback);
+    await log(department, message, type);
   }
 
   return {

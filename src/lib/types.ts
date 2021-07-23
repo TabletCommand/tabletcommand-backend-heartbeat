@@ -2,10 +2,10 @@
 export interface Department {
   _id?: string;
   id?: string; // legacy _id
-  heartbeat: {
-    incident: unknown[];
-    location: unknown[];
-    status: unknown[];
+  heartbeat?: {
+    incident: EnhancedHeartbeat[];
+    location: EnhancedHeartbeat[];
+    status: EnhancedHeartbeat[];
     version: string;
   };
 }
@@ -15,21 +15,26 @@ export interface HeartbeatKey {
   resolved: boolean;
 }
 
-export interface IHeartbeatMessage {
+export interface HeartbeatMessage {
   Time: string;
   Status: string;
   Message: string;
   RcvTime: number;
 }
 
+export interface IncomingHeartbeatMessage extends HeartbeatMessage {
+  Unit?: unknown[];
+  EntryDateTime?: string;
+}
+
 export type RedisKey = string;
 export type InterfaceVersion = string;
 
-export interface IStoredHeartbeat {
+export interface StoredHeartbeat {
   RcvTime: number;
 }
 
-export interface IEnhancedHeartbeat {
+export interface EnhancedHeartbeat {
   RcvTime: number;
   RcvTimeSFO: string;
   RcvTimeMEL: string;

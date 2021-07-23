@@ -49,29 +49,38 @@ module.exports = function module(dependencies) {
     var store = store_1.default({
         client: client,
     });
-    function log(department, message, type, callback) {
-        var _this = this;
-        if (!lodash_1.default.isObject(department)) {
-            return callback(null);
-        }
-        var _a = domain.heartbeatKeyForTypeOfDepartment(type, department), key = _a.key, resolved = _a.resolved;
-        // Log Heartbeat cannot expire keys, because we'd lose the last message
-        // we're limiting the list to maxListSize items instead
-        var msg = domain.heartbeatFromMessage(message);
-        return store.storeHeartbeat(key, msg, function (err) { return __awaiter(_this, void 0, void 0, function () {
+    function log(department, message, type) {
+        return __awaiter(this, void 0, void 0, function () {
+            var key, msg, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (err) {
-                            return [2 /*return*/, callback(err)];
+                        if (!lodash_1.default.isObject(department)) {
+                            return [2 /*return*/];
                         }
-                        return [4 /*yield*/, logInterfaceVersion(department, message, type)];
+                        if (!lodash_1.default.isString(message) || !lodash_1.default.isString(type)) {
+                            return [2 /*return*/];
+                        }
+                        key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
+                        msg = domain.heartbeatFromMessage(message);
+                        _a.label = 1;
                     case 1:
+                        _a.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, store.storeHeartbeat(key, msg)];
+                    case 2:
                         _a.sent();
-                        return [2 /*return*/, callback(null)];
+                        return [4 /*yield*/, logInterfaceVersion(department, message, type)];
+                    case 3:
+                        _a.sent();
+                        return [3 /*break*/, 5];
+                    case 4:
+                        error_1 = _a.sent();
+                        console.log("Failed to log heartbeat", message, "for", department, "type", type);
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/];
                 }
             });
-        }); });
+        });
     }
     function logInterfaceVersion(department, message, type) {
         return __awaiter(this, void 0, void 0, function () {
@@ -115,76 +124,137 @@ module.exports = function module(dependencies) {
             // tslint:enable:object-literal-sort-keys
         });
     }
-    function heartbeatItems(department, type, callback) {
-        var key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
-        configureOpts();
-        return store.getHeartbeats(key, function (err, decodedItems) {
-            var enhancedResults = lodash_1.default.map(decodedItems, function (item) {
-                item.RcvTimeSFO = moment_timezone_1.default.unix(item.RcvTime).tz("America/Los_Angeles").toString();
-                item.RcvTimeMEL = moment_timezone_1.default.unix(item.RcvTime).tz("Australia/Melbourne").toString();
-                item.timeAgo = moment_timezone_1.default(item.RcvTime * 1000).fromNow();
-                return item;
-            });
-            return callback(err, enhancedResults);
-        });
-    }
-    function getInterfaceVersion(department, callback) {
-        var key = domain.interfaceVersionKey(department).key;
-        return store.getInterfaceVersion(key, callback);
-    }
-    function checkDepartment(department, callback) {
-        if (!lodash_1.default.isObject(department.heartbeat)) {
-            department.heartbeat = {
-                incident: [],
-                location: [],
-                status: [],
-                version: "",
-            };
-        }
-        return heartbeatItems(department, "incident", function (errIncident, incident) {
-            if (errIncident) {
-                return callback(errIncident, department);
-            }
-            department.heartbeat.incident = incident;
-            return heartbeatItems(department, "status", function (errStatus, status) {
-                if (errStatus) {
-                    return callback(errStatus, department);
+    function heartbeatItems(department, type) {
+        return __awaiter(this, void 0, void 0, function () {
+            var key, decodedItems, enhancedResults;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
+                        configureOpts();
+                        return [4 /*yield*/, store.getHeartbeats(key)];
+                    case 1:
+                        decodedItems = _a.sent();
+                        enhancedResults = decodedItems.map(function (item) {
+                            var t = item.RcvTime;
+                            var RcvTimeSFO = moment_timezone_1.default.unix(t).tz("America/Los_Angeles").toString();
+                            var RcvTimeMEL = moment_timezone_1.default.unix(t).tz("Australia/Melbourne").toString();
+                            var timeAgo = moment_timezone_1.default(t * 1000).fromNow();
+                            return {
+                                RcvTime: t,
+                                RcvTimeMEL: RcvTimeMEL,
+                                RcvTimeSFO: RcvTimeSFO,
+                                timeAgo: timeAgo
+                            };
+                        });
+                        return [2 /*return*/, enhancedResults];
                 }
-                department.heartbeat.status = status;
-                return heartbeatItems(department, "location", function (errLocation, location) {
-                    if (errLocation) {
-                        return callback(errLocation, department);
-                    }
-                    department.heartbeat.location = location;
-                    return getInterfaceVersion(department, function (errVersion, version) {
-                        department.heartbeat.version = version;
-                        return callback(errVersion, department);
-                    });
-                });
             });
         });
     }
-    function checkDepartments(items, callback) {
-        return checkHeartbeats(items, 0, [], callback);
-    }
-    function checkHeartbeats(items, index, storage, callback) {
-        if (index >= lodash_1.default.size(items)) {
-            return callback(null, storage);
-        }
-        var department = items[index];
-        return checkDepartment(department, function (err, dept) {
-            if (err) {
-                return callback(err, []);
-            }
-            storage.push(dept);
-            return checkHeartbeats(items, index + 1, storage, callback);
+    function getInterfaceVersion(department) {
+        return __awaiter(this, void 0, void 0, function () {
+            var key;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        key = domain.interfaceVersionKey(department).key;
+                        return [4 /*yield*/, store.getInterfaceVersion(key)];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
         });
     }
-    function conditionalLog(shouldLog, department, message, type, callback) {
-        if (!shouldLog) {
-            return callback(null);
-        }
-        return log(department, message, type, callback);
+    function checkDepartment(department) {
+        return __awaiter(this, void 0, void 0, function () {
+            var incident, status_1, location_1, version, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!lodash_1.default.isObject(department.heartbeat)) {
+                            department.heartbeat = {
+                                incident: [],
+                                location: [],
+                                status: [],
+                                version: "",
+                            };
+                        }
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 6, , 7]);
+                        return [4 /*yield*/, heartbeatItems(department, "incident")];
+                    case 2:
+                        incident = _a.sent();
+                        department.heartbeat.incident = incident;
+                        return [4 /*yield*/, heartbeatItems(department, "status")];
+                    case 3:
+                        status_1 = _a.sent();
+                        department.heartbeat.status = status_1;
+                        return [4 /*yield*/, heartbeatItems(department, "location")];
+                    case 4:
+                        location_1 = _a.sent();
+                        department.heartbeat.location = location_1;
+                        return [4 /*yield*/, getInterfaceVersion(department)];
+                    case 5:
+                        version = _a.sent();
+                        department.heartbeat.version = version;
+                        return [3 /*break*/, 7];
+                    case 6:
+                        error_2 = _a.sent();
+                        console.log("error loading items for department", department._id, error_2);
+                        return [3 /*break*/, 7];
+                    case 7: return [2 /*return*/, department];
+                }
+            });
+        });
+    }
+    function checkDepartments(items) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, checkHeartbeats(items)];
+            });
+        });
+    }
+    function checkHeartbeats(items) {
+        return __awaiter(this, void 0, void 0, function () {
+            var storage, _i, items_1, item, department;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        storage = [];
+                        _i = 0, items_1 = items;
+                        _a.label = 1;
+                    case 1:
+                        if (!(_i < items_1.length)) return [3 /*break*/, 4];
+                        item = items_1[_i];
+                        return [4 /*yield*/, checkDepartment(item)];
+                    case 2:
+                        department = _a.sent();
+                        storage.push(department);
+                        _a.label = 3;
+                    case 3:
+                        _i++;
+                        return [3 /*break*/, 1];
+                    case 4: return [2 /*return*/, storage];
+                }
+            });
+        });
+    }
+    function conditionalLog(shouldLog, department, message, type) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!shouldLog) {
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, log(department, message, type)];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
     }
     return {
         checkDepartment: checkDepartment,

@@ -1,12 +1,12 @@
-import { IHeartbeatMessage, Department, ResolveInterfaceVersion } from "./types";
+import { Department, HeartbeatMessage, IncomingHeartbeatMessage, ResolveInterfaceVersion } from "./types";
 export default function domain(): {
     canLogInterfaceVersion: (type: string) => boolean;
-    defaultMessage: () => IHeartbeatMessage;
+    defaultMessage: () => HeartbeatMessage;
     extractVersion: (text: string, defaultVersion: string) => {
         version: string;
         resolved: boolean;
     };
-    heartbeatFromMessage: (message: any) => IHeartbeatMessage;
+    heartbeatFromMessage: (message: IncomingHeartbeatMessage) => HeartbeatMessage;
     heartbeatKeyForTypeOfDepartment: (type: string, department: Department) => {
         key: string;
         resolved: boolean;

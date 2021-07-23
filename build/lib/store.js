@@ -1,23 +1,4 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -59,12 +40,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var lodash_1 = __importDefault(require("lodash"));
-var util = __importStar(require("util"));
+var util_1 = require("util");
 function libStore(dependencies) {
     var client = dependencies.client;
     var maxListSize = 30;
-    var clientGet = util.promisify(client.get);
-    var clientSet = util.promisify(client.set);
+    var clientGet = util_1.promisify(client.get).bind(client);
+    var clientSet = util_1.promisify(client.set).bind(client);
+    // Hack for TS not recognizing the type
+    // https://stackoverflow.com/questions/62320989/error-in-redis-client-del-function-with-typescript
+    var clientLPush = util_1.promisify(client.lpush).bind(client);
+    var clientLTrim = util_1.promisify(client.ltrim).bind(client);
+    var clientLRange = util_1.promisify(client.lrange).bind(client);
     function storeInterfaceVersion(key, version) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -72,31 +58,70 @@ function libStore(dependencies) {
             });
         });
     }
-    function getInterfaceVersion(key, callback) {
-        return client.get(key, function (err, result) {
-            var version = "";
-            if (lodash_1.default.isString(result)) {
-                version = result;
-            }
-            return callback(err, version);
-        });
-    }
-    function storeHeartbeat(key, msg, callback) {
-        return client.lpush(key, JSON.stringify(msg), function (lpushErr) {
-            if (lpushErr) {
-                return callback(lpushErr);
-            }
-            return client.ltrim(key, 0, maxListSize - 1, function (ltrimErr) {
-                return callback(ltrimErr);
+    function getInterfaceVersion(key) {
+        return __awaiter(this, void 0, void 0, function () {
+            var version, item;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        version = "";
+                        return [4 /*yield*/, clientGet(key)];
+                    case 1:
+                        item = _a.sent();
+                        if (item && lodash_1.default.isString(item)) {
+                            version = item;
+                        }
+                        return [2 /*return*/, version];
+                }
             });
         });
     }
-    function getHeartbeats(key, callback) {
-        return client.lrange(key, 0, maxListSize, function (err, result) {
-            var decodedResults = lodash_1.default.map(result, function (i) {
-                return JSON.parse(i);
+    function storeHeartbeat(key, msg) {
+        return __awaiter(this, void 0, void 0, function () {
+            var msgStr;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        msgStr = JSON.stringify(msg);
+                        return [4 /*yield*/, clientLPush(key, msgStr)];
+                    case 1:
+                        _a.sent();
+                        return [4 /*yield*/, clientLTrim(key, 0, maxListSize - 1)];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
             });
-            return callback(err, decodedResults);
+        });
+    }
+    function getHeartbeats(key) {
+        return __awaiter(this, void 0, void 0, function () {
+            var results, decoded;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, clientLRange(key, 0, maxListSize)];
+                    case 1:
+                        results = _a.sent();
+                        if (!lodash_1.default.isArray(results)) {
+                            return [2 /*return*/, []];
+                        }
+                        decoded = [];
+                        results.forEach(function (item) {
+                            if (!lodash_1.default.isString(item)) {
+                                return;
+                            }
+                            try {
+                                var asObject = JSON.parse(item);
+                                decoded.push(asObject);
+                            }
+                            catch (error) {
+                                console.log("Could not parse " + item + " as JSON.");
+                                return;
+                            }
+                        });
+                        return [2 /*return*/, decoded];
+                }
+            });
         });
     }
     return {
@@ -107,5 +132,4 @@ function libStore(dependencies) {
     };
 }
 exports.default = libStore;
-;
 //# sourceMappingURL=store.js.map
