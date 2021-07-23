@@ -3,10 +3,10 @@
 const assert = require("chai").assert;
 
 const redis = require("redis-js");
-const redisClient = redis.createClient();
+const client = redis.createClient();
 
-const index = require("../build/index")({
-  redisClient
+const index = require("../build/index").default({
+  client
 });
 
 describe("index", () => {

@@ -43,8 +43,8 @@ var lodash_1 = __importDefault(require("lodash"));
 var moment_timezone_1 = __importDefault(require("moment-timezone"));
 var domain_1 = __importDefault(require("./lib/domain"));
 var store_1 = __importDefault(require("./lib/store"));
-module.exports = function module(dependencies) {
-    var client = dependencies.redisClient;
+function indexModule(dependencies) {
+    var client = dependencies.client;
     var domain = domain_1.default();
     var store = store_1.default({
         client: client,
@@ -264,5 +264,6 @@ module.exports = function module(dependencies) {
         conditionalLog: conditionalLog,
         logInterfaceVersion: logInterfaceVersion,
     };
-};
+}
+exports.default = indexModule;
 //# sourceMappingURL=index.js.map

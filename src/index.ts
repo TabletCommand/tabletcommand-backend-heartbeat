@@ -1,7 +1,5 @@
 "use strict";
 
-/// <reference types="./lib/globals.d.ts" />
-/// <reference types="redis" />
 import * as redis from "redis";
 import _ from "lodash";
 import moment from "moment-timezone";
@@ -16,10 +14,10 @@ import {
 import DomainModule from "./lib/domain";
 import StoreModule from "./lib/store";
 
-module.exports = function module(dependencies: {
-  redisClient: redis.RedisClient;
+export default function indexModule(dependencies: {
+  client: redis.RedisClient,
 }) {
-  const { redisClient: client } = dependencies;
+  const { client } = dependencies;
 
   const domain = DomainModule();
   const store = StoreModule({
@@ -174,4 +172,6 @@ module.exports = function module(dependencies: {
     conditionalLog,
     logInterfaceVersion,
   };
-};
+}
+
+export type IndexModule = ReturnType<typeof indexModule>;
