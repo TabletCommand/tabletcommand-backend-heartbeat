@@ -1,6 +1,6 @@
 {
   "name": "tabletcommand-backend-heartbeat",
-  "version": "1.5.3",
+  "version": "2.0.0",
   "description": "Tablet Command Heartbeat",
   "main": "build/index",
   "types": "definitions/index.d.ts",
