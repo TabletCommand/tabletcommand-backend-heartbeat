@@ -5,7 +5,7 @@ const assert = require("chai").assert;
 const redis = require("redis-js");
 const redisClient = redis.createClient();
 
-const index = require("../lib/index")({
+const index = require("../build/index")({
   redisClient
 });
 
@@ -19,73 +19,48 @@ describe("index", () => {
   const noMessage = {};
   const type = "incident";
   context("checkDepartment", () => {
-    it("empty if no data is saved", (done) => {
-      return index.checkDepartment(department, (err, d) => {
-        assert.isNull(err);
-        assert.isObject(d);
-        assert.isObject(d.heartbeat);
-        assert.isArray(d.heartbeat.incident);
-        assert.isArray(d.heartbeat.location);
-        assert.isArray(d.heartbeat.status);
-        assert.isString(d.heartbeat.version);
+    it("empty if no data is saved", async () => {
+      const d = await index.checkDepartment(department);
+      assert.isObject(d);
+      assert.isObject(d.heartbeat);
+      assert.isArray(d.heartbeat.incident);
+      assert.isArray(d.heartbeat.location);
+      assert.isArray(d.heartbeat.status);
+      assert.isString(d.heartbeat.version);
 
-        assert.equal(d.heartbeat.incident.length, 0);
-        assert.equal(d.heartbeat.location.length, 0);
-        assert.equal(d.heartbeat.status.length, 0);
-        assert.equal(d.heartbeat.version, "");
-
-        return done();
-      });
+      assert.equal(d.heartbeat.incident.length, 0);
+      assert.equal(d.heartbeat.location.length, 0);
+      assert.equal(d.heartbeat.status.length, 0);
+      assert.equal(d.heartbeat.version, "");
     });
   });
 
   context("logInterfaceVersion", () => {
-    it("doesn't save message if wrong type", (done) => {
-      return index.logInterfaceVersion(department, message, "abcd", (err) => {
-        assert.isNull(err);
-        return index.checkDepartment(department, (err, d) => {
-          assert.isNull(err);
-          assert.equal(d.heartbeat.version, "");
-          return done();
-        });
-      });
+    it("doesn't save message if wrong type", async () => {
+      await index.logInterfaceVersion(department, message, "abcd");
+      const d = await index.checkDepartment(department);
+      assert.equal(d.heartbeat.version, "");
     });
 
-    it("doesn't save message if it was not resolved", (done) => {
-      return index.logInterfaceVersion(department, noMessage, type, (err) => {
-        assert.isNull(err);
-        return index.checkDepartment(department, (err, d) => {
-          assert.isNull(err);
-          assert.equal(d.heartbeat.version, "");
-          return done();
-        });
-      });
+    it("doesn't save message if it was not resolved", async () => {
+      await index.logInterfaceVersion(department, noMessage, type);
+      const d = await index.checkDepartment(department);
+      assert.equal(d.heartbeat.version, "");
     });
 
-    it("saves correct interface version", (done) => {
-      return index.logInterfaceVersion(department, message, type, (err) => {
-        assert.isNull(err);
-        return index.checkDepartment(department, (err, d) => {
-          assert.isNull(err);
-          assert.equal(d.heartbeat.version, message.Interface);
-          return done();
-        });
-      });
+    it("saves correct interface version", async () => {
+      await index.logInterfaceVersion(department, message, type);
+      const d = await index.checkDepartment(department);
+      assert.equal(d.heartbeat.version, message.Interface);
     });
 
-    it("missing version does not overwrite correct version", (done) => {
-      return index.logInterfaceVersion(department, message, type, (err) => {
-        assert.isNull(err);
-        return index.checkDepartment(department, (err, d) => {
-          assert.isNull(err);
-          assert.equal(d.heartbeat.version, message.Interface);
-          return index.logInterfaceVersion(department, noMessage, type, (err) => {
-            assert.isNull(err);
-            assert.equal(d.heartbeat.version, message.Interface);
-            return done();
-          });
-        });
-      });
+    it("missing version does not overwrite correct version", async () => {
+      await index.logInterfaceVersion(department, message, type);
+      const d = await index.checkDepartment(department);
+      assert.equal(d.heartbeat.version, message.Interface);
+      await index.logInterfaceVersion(department, noMessage, type);
+      const d2 = await index.checkDepartment(department);
+      assert.equal(d2.heartbeat.version, message.Interface);
     });
   });
 });

@@ -1,40 +1,42 @@
 "use strict";
 
 const assert = require("chai").assert;
-const domain = require("../lib/lib/domain")();
+const domain = require("../build/lib/domain").default();
 
 describe("domain", () => {
   context("heartbeatKeyForTypeOfDepartment", () => {
-    it("incident", (done) => {
+    it("incident", () => {
       const department = {
         id: "abcd"
       };
-      return domain.heartbeatKeyForTypeOfDepartment("incident", department, (key, resolved) => {
-        assert.equal(key, "hb:i:abcd");
-        return done();
-      });
+      const {
+        key
+      } = domain.heartbeatKeyForTypeOfDepartment("incident", department);
+      assert.equal(key, "hb:i:abcd");
     });
   });
 
   context("interfaceVersionFromMessage", () => {
-    it("decodes resolved message", (done) => {
+    it("decodes resolved message", () => {
       const message = {
         "Interface": "Interface_Two_Way JSON message by Tablet Command Inc - 1.7.5 - Comment"
       };
-      return domain.interfaceVersionFromMessage(message, (version, resolved) => {
-        assert.equal(version, "Interface_Two_Way 1.7.5");
-        assert.equal(resolved, true);
-        return done();
-      });
+      const {
+        version,
+        resolved,
+      } = domain.interfaceVersionFromMessage(message);
+      assert.equal(version, "Interface_Two_Way 1.7.5");
+      assert.equal(resolved, true);
     });
 
-    it("decodes missing message", (done) => {
+    it("decodes missing message", () => {
       const message = {};
-      return domain.interfaceVersionFromMessage(message, (version, resolved) => {
-        assert.equal(version, "Unknown");
-        assert.equal(resolved, false);
-        return done();
-      });
+      const {
+        version,
+        resolved,
+      } = domain.interfaceVersionFromMessage(message);
+      assert.equal(version, "Unknown");
+      assert.equal(resolved, false);
     });
   });
 
@@ -86,22 +88,15 @@ describe("domain", () => {
         b: "Service-TriTech SQL 1.0"
       }
     ];
-    it("decodes known messages", (done) => {
-      function testMessages(items, index, callback) {
-        if (index >= items.length) {
-          return callback(null);
-        }
-
-        const item = items[index];
-        return domain.extractVersion(item.a, "abcd", function(version, resolved) {
-          assert.equal(version, item.b);
-          assert.equal(resolved, true);
-
-          return testMessages(items, index + 1, callback);
-        });
+    it("decodes known messages", () => {
+      for (const item of messages) {
+        const { 
+          version, 
+          resolved,
+        } = domain.extractVersion(item.a, "abcd");
+        assert.equal(version, item.b);
+        assert.equal(resolved, true);
       }
-
-      return testMessages(messages, 0, done);
     });
   });
 });

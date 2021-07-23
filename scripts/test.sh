@@ -22,4 +22,5 @@ NODEv12="v12.18.2"
 nvm install $NODEv12
 nvm use $NODEv12
 npm install
-npm test
+npm run lint 
+npm run test
