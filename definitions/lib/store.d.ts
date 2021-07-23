@@ -1,19 +1,11 @@
 import * as redis from "redis";
-export declare interface IStoreDependency {
+import { InterfaceVersion, RedisKey, IHeartbeatMessage } from "./types";
+export default function libStore(dependencies: {
     client: redis.RedisClient;
-}
-export declare interface IStoreModule {
-    getHeartbeats(key: RedisKey, callback: Callback<IStoredHeartbeat[]>): void;
-    getInterfaceVersion(key: RedisKey, callback: Callback<InterfaceVersion>): void;
-    storeInterfaceVersion(key: RedisKey, version: InterfaceVersion, callback: CallbackErr): void;
-    storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr): void;
-}
-export declare interface IStoredHeartbeat {
-    RcvTime: number;
-}
-export declare interface IEnhancedHeartbeat {
-    RcvTime: number;
-    RcvTimeSFO: string;
-    RcvTimeMEL: string;
-    timeAgo: string;
-}
+}): {
+    getHeartbeats: (key: RedisKey, callback: Callback<unknown[]>) => boolean;
+    getInterfaceVersion: (key: RedisKey, callback: Callback<InterfaceVersion>) => boolean;
+    storeHeartbeat: (key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr) => boolean;
+    storeInterfaceVersion: (key: RedisKey, version: InterfaceVersion) => Promise<unknown>;
+};
+export declare type StoreModule = ReturnType<typeof libStore>;

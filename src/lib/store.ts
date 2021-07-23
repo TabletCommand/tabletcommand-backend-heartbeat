@@ -2,39 +2,30 @@
 import * as redis from "redis";
 import _ from "lodash";
 
-export declare interface IStoreDependency {
-  client: redis.RedisClient;
-}
+import * as util from "util";
 
-export declare interface IStoreModule {
-  getHeartbeats(key: RedisKey, callback: Callback<IStoredHeartbeat[]>): void;
-  getInterfaceVersion(key: RedisKey, callback: Callback<InterfaceVersion>): void;
-  storeInterfaceVersion(key: RedisKey, version: InterfaceVersion, callback: CallbackErr): void;
-  storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr): void;
-}
+import {
+  InterfaceVersion,
+  RedisKey,
+  IHeartbeatMessage,
+  IStoredHeartbeat,
+} from "./types";
 
-export declare interface IStoredHeartbeat {
-  RcvTime: number;
-}
-
-export declare interface IEnhancedHeartbeat {
-  RcvTime: number;
-  RcvTimeSFO: string;
-  RcvTimeMEL: string;
-  timeAgo: string;
-}
-
-module.exports = function storeModule(dependencies: IStoreDependency): IStoreModule {
+export default function libStore(dependencies: {
+  client: redis.RedisClient,
+}) {
   const { client } = dependencies;
-
   const maxListSize: number = 30;
 
-  function storeInterfaceVersion(key: RedisKey, version: InterfaceVersion, callback: CallbackErr) {
-    return client.set(key, version, callback);
+  const clientGet = util.promisify(client.get);
+  const clientSet = util.promisify(client.set);
+
+  async function storeInterfaceVersion(key: RedisKey, version: InterfaceVersion) {
+    return clientSet(key, version);
   }
 
   function getInterfaceVersion(key: RedisKey, callback: Callback<InterfaceVersion>) {
-    return client.get(key, (err, result) => {
+    return client.get(key, (err: Error | null, result: unknown) => {
       let version = "";
       if (_.isString(result)) {
         version = result;
@@ -44,18 +35,18 @@ module.exports = function storeModule(dependencies: IStoreDependency): IStoreMod
   }
 
   function storeHeartbeat(key: RedisKey, msg: IHeartbeatMessage, callback: CallbackErr) {
-    return client.lpush(key, JSON.stringify(msg), (lpushErr) => {
+    return client.lpush(key, JSON.stringify(msg), (lpushErr: Error | null) => {
       if (lpushErr) {
         return callback(lpushErr);
       }
-      return client.ltrim(key, 0, maxListSize - 1, (ltrimErr) => {
+      return client.ltrim(key, 0, maxListSize - 1, (ltrimErr: Error | null) => {
         return callback(ltrimErr);
       });
     });
   }
 
-  function getHeartbeats(key: RedisKey, callback: Callback<IStoredHeartbeat[]>) {
-    return client.lrange(key, 0, maxListSize, (err, result) => {
+  function getHeartbeats(key: RedisKey, callback: Callback<unknown[]>) {
+    return client.lrange(key, 0, maxListSize, (err: Error | null, result: unknown[]) => {
       const decodedResults = _.map(result, (i: string) => {
         return JSON.parse(i) as IStoredHeartbeat;
       });
@@ -71,3 +62,5 @@ module.exports = function storeModule(dependencies: IStoreDependency): IStoreMod
     storeInterfaceVersion,
   };
 };
+
+export type StoreModule = ReturnType<typeof libStore>;

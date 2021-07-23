@@ -1,6 +1,10 @@
 "use strict";
-module.exports = function domainModule() {
-    var _ = require("lodash");
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var lodash_1 = __importDefault(require("lodash"));
+function domain() {
     function defaultMessage() {
         var receivedTime = new Date().valueOf() / 1000;
         return {
@@ -30,49 +34,59 @@ module.exports = function domainModule() {
             resolved: resolved
         };
     }
-    function keyForDepartment(department, prefix, callback) {
+    function keyForDepartment(department, prefix) {
         var departmentId = "unknown";
         var resolved = false;
-        if (_.isString(department.id)) {
+        if (department.id && lodash_1.default.isString(department.id)) {
             departmentId = department.id;
             resolved = true;
         }
-        else if (_.isString(department._id)) {
+        else if (department._id && lodash_1.default.isString(department._id)) {
             departmentId = department._id;
             resolved = true;
         }
         var key = prefix + ":" + departmentId;
-        return callback(key, resolved);
+        return {
+            key: key,
+            resolved: resolved,
+        };
     }
-    function interfaceVersionKey(department, callback) {
-        return keyForDepartment(department, "cad:v", callback);
+    function interfaceVersionKey(department) {
+        var result = keyForDepartment(department, "cad:v");
+        return result;
     }
-    function interfaceVersionFromMessage(message, callback) {
-        var resolved = false;
+    function interfaceVersionFromMessage(message) {
         var defaultVersion = "Unknown";
-        if (!_.isObject(message)) {
-            return callback(defaultVersion, resolved);
+        if (!lodash_1.default.isObject(message)) {
+            return {
+                resolved: false,
+                version: defaultVersion,
+            };
         }
-        if (!_.isString(message.Interface)) {
-            return callback(defaultVersion, resolved);
+        var msgInterface = "";
+        if (lodash_1.default.isString(message.Interface)) {
+            msgInterface = message.Interface;
         }
-        return extractVersion(message.Interface, defaultVersion, callback);
+        return extractVersion(msgInterface, defaultVersion);
     }
-    function interfaceVersionForDepartment(department, message, callback) {
-        return interfaceVersionKey(department, function (key) {
-            return interfaceVersionFromMessage(message, function (interfaceVersion, resolved) {
-                return callback(interfaceVersion, key, resolved);
-            });
-        });
+    function interfaceVersionForDepartment(department, message) {
+        var key = interfaceVersionKey(department).key;
+        var _a = interfaceVersionFromMessage(message), interfaceVersion = _a.version, resolved = _a.resolved;
+        return {
+            version: interfaceVersion,
+            key: key,
+            resolved: resolved
+        };
     }
-    function canLogInterfaceVersion(type, callback) {
-        var canLog = _.isString(type) && (type === "incident");
-        return callback(canLog, true);
+    function canLogInterfaceVersion(type) {
+        return lodash_1.default.isString(type) && (type === "incident");
     }
-    function extractVersion(text, defaultVersion, callback) {
-        var resolved = false;
-        if (_.trim(text) === "") {
-            return callback(defaultVersion, resolved);
+    function extractVersion(text, defaultVersion) {
+        if (lodash_1.default.trim(text) === "") {
+            return {
+                version: defaultVersion,
+                resolved: false,
+            };
         }
         var cleanup = [
             /JSON.message.by/,
@@ -91,43 +105,45 @@ module.exports = function domainModule() {
         });
         var parts = clean.split(" ");
         var removed = parts.filter(function (item) {
-            var trimmed = _.trim(item);
+            var trimmed = lodash_1.default.trim(item);
             return trimmed !== "" && trimmed !== "-";
         });
-        resolved = true;
-        return callback(removed.join(" "), resolved);
+        return {
+            version: removed.join(" "),
+            resolved: true,
+        };
     }
-    function heartbeatKeyForTypeOfDepartment(type, department, callback) {
+    function heartbeatKeyForTypeOfDepartment(type, department) {
         var keyPrefix = keyForHeartbeat(type).keyPrefix;
-        return keyForDepartment(department, keyPrefix, callback);
+        return keyForDepartment(department, keyPrefix);
     }
-    function heartbeatFromMessage(message, callback) {
-        if (!_.isString(message.Time)) {
+    function heartbeatFromMessage(message) {
+        if (!lodash_1.default.isString(message.Time)) {
             // If no .Time provided, peek into .Unit
-            if (_.isArray(message.Unit)) {
+            if (lodash_1.default.isArray(message.Unit)) {
                 var unitTime_1 = null;
-                _.each(message.Unit, function (unit) {
-                    if (_.isString(unit.TimeArrived)) {
+                lodash_1.default.each(message.Unit, function (unit) {
+                    if (lodash_1.default.isString(unit.TimeArrived)) {
                         unitTime_1 = unit.TimeArrived;
                     }
-                    else if (_.isString(unit.TimeEnroute)) {
+                    else if (lodash_1.default.isString(unit.TimeEnroute)) {
                         unitTime_1 = unit.TimeEnroute;
                     }
-                    else if (_.isString(unit.TimeDispatched)) {
+                    else if (lodash_1.default.isString(unit.TimeDispatched)) {
                         unitTime_1 = unit.TimeDispatched;
                     }
                 });
-                if (!_.isNull(unitTime_1) && !_.isUndefined(unitTime_1)) {
+                if (!lodash_1.default.isNull(unitTime_1) && !lodash_1.default.isUndefined(unitTime_1)) {
                     message.Time = unitTime_1;
                 }
             }
-            else if (_.isString(message.EntryDateTime)) {
+            else if (lodash_1.default.isString(message.EntryDateTime)) {
                 message.Time = message.EntryDateTime;
             }
         }
-        var msg = _.pick(message, ["Time", "Status", "Message", "RcvTime"]);
+        var msg = lodash_1.default.pick(message, ["Time", "Status", "Message", "RcvTime"]);
         msg.RcvTime = new Date().getTime() / 1000.0;
-        return callback(msg, true);
+        return msg;
     }
     return {
         canLogInterfaceVersion: canLogInterfaceVersion,
@@ -141,5 +157,6 @@ module.exports = function domainModule() {
         keyForDepartment: keyForDepartment,
         keyForHeartbeat: keyForHeartbeat,
     };
-};
+}
+exports.default = domain;
 //# sourceMappingURL=domain.js.map

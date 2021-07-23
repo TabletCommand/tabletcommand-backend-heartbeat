@@ -1,23 +1,32 @@
-declare interface IDomainModule {
-    canLogInterfaceVersion(type: string, callback: Resolve<boolean>): void;
-    defaultMessage(): IHeartbeatMessage;
-    keyForHeartbeat(type: string): HeartbeatKey;
-    keyForDepartment(department: any, prefix: string, callback: Resolve<RedisKey>): void;
-    heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>): void;
-    heartbeatKeyForTypeOfDepartment(type: string, department: any, callback: Resolve<RedisKey>): void;
-    interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion): void;
-    interfaceVersionKey(department: any, callback: Resolve<RedisKey>): void;
-}
-declare interface HeartbeatKey {
-    keyPrefix: string;
-    resolved: boolean;
-}
-declare interface IHeartbeatMessage {
-    Time: string;
-    Status: string;
-    Message: string;
-    RcvTime: number;
-}
-declare type RedisKey = string;
-declare type InterfaceVersion = string;
-declare type ResolveInterfaceVersion = (version: InterfaceVersion, key: RedisKey, resolved: boolean) => void;
+import { IHeartbeatMessage, Department, ResolveInterfaceVersion } from "./types";
+export default function domain(): {
+    canLogInterfaceVersion: (type: string) => boolean;
+    defaultMessage: () => IHeartbeatMessage;
+    extractVersion: (text: string, defaultVersion: string) => {
+        version: string;
+        resolved: boolean;
+    };
+    heartbeatFromMessage: (message: any) => IHeartbeatMessage;
+    heartbeatKeyForTypeOfDepartment: (type: string, department: Department) => {
+        key: string;
+        resolved: boolean;
+    };
+    interfaceVersionForDepartment: (department: Department, message: unknown) => ResolveInterfaceVersion;
+    interfaceVersionFromMessage: (message: unknown) => {
+        resolved: boolean;
+        version: string;
+    };
+    interfaceVersionKey: (department: any) => {
+        key: string;
+        resolved: boolean;
+    };
+    keyForDepartment: (department: Department, prefix: string) => {
+        key: string;
+        resolved: boolean;
+    };
+    keyForHeartbeat: (type: string) => {
+        keyPrefix: string;
+        resolved: boolean;
+    };
+};
+export declare type DomainModule = ReturnType<typeof domain>;

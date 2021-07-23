@@ -1,38 +1,15 @@
-declare interface IDomainModule {
-  canLogInterfaceVersion(type: string, callback: Resolve<boolean>): void;
+import _ from "lodash";
 
-  defaultMessage(): IHeartbeatMessage;
+import {
+  IHeartbeatMessage,
+  Department,
+  HeartbeatKey,
+  InterfaceVersion,
+  RedisKey,
+  ResolveInterfaceVersion,
+} from "./types";
 
-  keyForHeartbeat(type: string): HeartbeatKey;
-  keyForDepartment(department: any, prefix: string, callback: Resolve<RedisKey>): void;
-
-  heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>): void;
-  heartbeatKeyForTypeOfDepartment(type: string, department: any, callback: Resolve<RedisKey>): void;
-
-  interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion): void;
-  interfaceVersionKey(department: any, callback: Resolve<RedisKey>): void;
-}
-
-declare interface HeartbeatKey {
-  keyPrefix: string;
-  resolved: boolean;
-}
-
-declare interface IHeartbeatMessage {
-  Time: string;
-  Status: string;
-  Message: string;
-  RcvTime: number;
-}
-
-declare type RedisKey = string;
-declare type InterfaceVersion = string;
-
-declare type ResolveInterfaceVersion = (version: InterfaceVersion, key: RedisKey, resolved: boolean) => void;
-
-module.exports = function domainModule() {
-  const _ = require("lodash");
-
+export default function domain() {
   function defaultMessage(): IHeartbeatMessage {
     const receivedTime = new Date().valueOf() / 1000;
     return {
@@ -63,56 +40,71 @@ module.exports = function domainModule() {
     };
   }
 
-  function keyForDepartment(department: any, prefix: string, callback: Resolve<RedisKey>) {
+  function keyForDepartment(department: Department, prefix: string) {
     let departmentId = "unknown";
     let resolved = false;
-    if (_.isString(department.id)) {
+    if (department.id && _.isString(department.id)) {
       departmentId = department.id;
       resolved = true;
-    } else if (_.isString(department._id)) {
+    } else if (department._id && _.isString(department._id)) {
       departmentId = department._id;
       resolved = true;
     }
 
     const key = `${prefix}:${departmentId}`;
-    return callback(key, resolved);
+    return {
+      key,
+      resolved,
+    };
   }
 
-  function interfaceVersionKey(department: any, callback: Resolve<RedisKey>) {
-    return keyForDepartment(department, "cad:v", callback);
+  function interfaceVersionKey(department: any) {
+    const result = keyForDepartment(department, "cad:v");
+    return result;
   }
 
-  function interfaceVersionFromMessage(message: any, callback: Resolve<InterfaceVersion>) {
-    const resolved = false;
+  function interfaceVersionFromMessage(message: unknown) {
     const defaultVersion = "Unknown";
     if (!_.isObject(message)) {
-      return callback(defaultVersion, resolved);
+      return {
+        resolved: false,
+        version: defaultVersion,
+      };
     }
 
-    if (!_.isString(message.Interface)) {
-      return callback(defaultVersion, resolved);
+    let msgInterface = "";
+    if (_.isString((message as Record<string, unknown>).Interface)) {
+      msgInterface = (message as Record<string, unknown>).Interface as string;
     }
 
-    return extractVersion(message.Interface, defaultVersion, callback);
+    return extractVersion(msgInterface, defaultVersion);
   }
 
-  function interfaceVersionForDepartment(department: any, message: any, callback: ResolveInterfaceVersion) {
-    return interfaceVersionKey(department, (key) => {
-      return interfaceVersionFromMessage(message, (interfaceVersion, resolved) => {
-        return callback(interfaceVersion, key, resolved);
-      });
-    });
+  function interfaceVersionForDepartment(department: Department, message: unknown): ResolveInterfaceVersion {
+    const { 
+      key,
+    } = interfaceVersionKey(department);
+    const {
+      version: interfaceVersion,
+      resolved
+    } = interfaceVersionFromMessage(message);
+    return {
+      version: interfaceVersion,
+      key,
+      resolved
+    };
   }
 
-  function canLogInterfaceVersion(type: string, callback: Resolve<boolean>) {
-    const canLog = _.isString(type) && (type === "incident");
-    return callback(canLog, true);
+  function canLogInterfaceVersion(type: string): boolean {
+    return _.isString(type) && (type === "incident");
   }
 
-  function extractVersion(text: string, defaultVersion: string, callback: Resolve<InterfaceVersion>) {
-    let resolved = false;
+  function extractVersion(text: string, defaultVersion: string) {
     if (_.trim(text) === "") {
-      return callback(defaultVersion, resolved);
+      return {
+        version: defaultVersion,
+        resolved: false,
+      };
     }
 
     const cleanup = [
@@ -138,19 +130,20 @@ module.exports = function domainModule() {
       return trimmed !== "" && trimmed !== "-";
     });
 
-    resolved = true;
-
-    return callback(removed.join(" "), resolved);
+    return {
+      version: removed.join(" "),
+      resolved: true,
+    };
   }
 
-  function heartbeatKeyForTypeOfDepartment(type: string, department: any, callback: Resolve<RedisKey>) {
+  function heartbeatKeyForTypeOfDepartment(type: string, department: Department) {
     const {
       keyPrefix
     } = keyForHeartbeat(type);
-    return keyForDepartment(department, keyPrefix, callback);
+    return keyForDepartment(department, keyPrefix);
   }
 
-  function heartbeatFromMessage(message: any, callback: Resolve<IHeartbeatMessage>) {
+  function heartbeatFromMessage(message: any): IHeartbeatMessage {
     if (!_.isString(message.Time)) {
       // If no .Time provided, peek into .Unit
       if (_.isArray(message.Unit)) {
@@ -175,7 +168,7 @@ module.exports = function domainModule() {
 
     const msg = _.pick(message, ["Time", "Status", "Message", "RcvTime"]);
     msg.RcvTime = new Date().getTime() / 1000.0;
-    return callback(msg, true);
+    return msg;
   }
 
   return {
@@ -190,4 +183,6 @@ module.exports = function domainModule() {
     keyForDepartment,
     keyForHeartbeat,
   };
-};
+}
+
+export type DomainModule = ReturnType<typeof domain>;
