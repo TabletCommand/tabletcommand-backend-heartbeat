@@ -17,9 +17,9 @@ if hash brew 2>/dev/null; then
     fi
 fi
 
-NODEv10="v10.14.2"
+NODEv12="v12.18.2"
 
-nvm install $NODEv10
-nvm use $NODEv10
+nvm install $NODEv12
+nvm use $NODEv12
 npm install
 npm test

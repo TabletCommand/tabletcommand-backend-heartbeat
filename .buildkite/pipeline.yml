@@ -1,0 +1,3 @@
+steps:
+  - command: "bash scripts/build.sh"
+    label: ":notes: test"
