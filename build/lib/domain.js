@@ -110,7 +110,7 @@ function domain() {
             resolved: resolved
         };
     }
-    function canLogInterfaceVersion(type) {
+    function shouldLogInterfaceVersion(type) {
         return lodash_1.default.isString(type) && (type === "incident");
     }
     function heartbeatKeyForTypeOfDepartment(type, department) {
@@ -146,7 +146,7 @@ function domain() {
         return msg;
     }
     return {
-        canLogInterfaceVersion: canLogInterfaceVersion,
+        shouldLogInterfaceVersion: shouldLogInterfaceVersion,
         defaultMessage: defaultMessage,
         extractVersion: extractVersion,
         heartbeatFromMessage: heartbeatFromMessage,

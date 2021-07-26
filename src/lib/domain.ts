@@ -130,7 +130,7 @@ export default function domain() {
     };
   }
 
-  function canLogInterfaceVersion(type: string): boolean {
+  function shouldLogInterfaceVersion(type: string): boolean {
     return _.isString(type) && (type === "incident");
   }
 
@@ -170,7 +170,7 @@ export default function domain() {
   }
 
   return {
-    canLogInterfaceVersion,
+    shouldLogInterfaceVersion,
     defaultMessage,
     extractVersion,
     heartbeatFromMessage,

@@ -1,5 +1,6 @@
 import * as redis from "redis";
 import _ from "lodash";
+import debug_module from "debug";
 
 import { promisify } from "util";
 
@@ -15,6 +16,7 @@ export default function libStore(dependencies: {
 }) {
   const { client } = dependencies;
   const maxListSize = 30;
+  const debug = debug_module("heartbeat:lib:store");
 
   // try this: const getAsync = util.promisify<string|undefined>(this.redisClient.get.bind(this.redisClient)) – Ivan V. Mar 4 at 10:08
 
@@ -27,6 +29,7 @@ export default function libStore(dependencies: {
   const clientLRange = promisify(client.lrange.bind(client));
 
   async function storeInterfaceVersion(key: RedisKey, version: InterfaceVersion) {
+    debug(`client.set ${key} ${version}.`);
     return clientSet(key, version);
   }
 
@@ -41,11 +44,14 @@ export default function libStore(dependencies: {
 
   async function storeHeartbeat(key: RedisKey, msg: HeartbeatMessage) {
     const msgStr = JSON.stringify(msg);
+    debug(`client.lpush ${key} ${msgStr}.`);
     await clientLPush(key, msgStr);
+    debug(`client.ltrim ${key} 0, ${maxListSize - 1}.`);
     await clientLTrim(key, 0, maxListSize - 1);
   }
 
   async function getHeartbeats(key: RedisKey) {
+    debug(`client.lrange ${key} 0, ${maxListSize}.`);
     const results = await clientLRange(key, 0, maxListSize);
     if (!_.isArray(results)) {
       return [];

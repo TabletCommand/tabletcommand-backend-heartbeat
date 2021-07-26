@@ -40,10 +40,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var lodash_1 = __importDefault(require("lodash"));
+var debug_1 = __importDefault(require("debug"));
 var util_1 = require("util");
 function libStore(dependencies) {
     var client = dependencies.client;
     var maxListSize = 30;
+    var debug = debug_1.default("heartbeat:lib:store");
     // try this: const getAsync = util.promisify<string|undefined>(this.redisClient.get.bind(this.redisClient)) – Ivan V. Mar 4 at 10:08
     var clientGet = util_1.promisify(client.get.bind(client));
     var clientSet = util_1.promisify(client.set.bind(client));
@@ -55,6 +57,7 @@ function libStore(dependencies) {
     function storeInterfaceVersion(key, version) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
+                debug("client.set " + key + " " + version + ".");
                 return [2 /*return*/, clientSet(key, version)];
             });
         });
@@ -84,9 +87,11 @@ function libStore(dependencies) {
                 switch (_a.label) {
                     case 0:
                         msgStr = JSON.stringify(msg);
+                        debug("client.lpush " + key + " " + msgStr + ".");
                         return [4 /*yield*/, clientLPush(key, msgStr)];
                     case 1:
                         _a.sent();
+                        debug("client.ltrim " + key + " 0, " + (maxListSize - 1) + ".");
                         return [4 /*yield*/, clientLTrim(key, 0, maxListSize - 1)];
                     case 2:
                         _a.sent();
@@ -100,7 +105,9 @@ function libStore(dependencies) {
             var results, decoded;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, clientLRange(key, 0, maxListSize)];
+                    case 0:
+                        debug("client.lrange " + key + " 0, " + maxListSize + ".");
+                        return [4 /*yield*/, clientLRange(key, 0, maxListSize)];
                     case 1:
                         results = _a.sent();
                         if (!lodash_1.default.isArray(results)) {

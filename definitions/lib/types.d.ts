@@ -1,6 +1,7 @@
 export interface Department {
     _id?: string;
     id?: string;
+    department?: string;
     heartbeat?: {
         incident: EnhancedHeartbeat[];
         location: EnhancedHeartbeat[];

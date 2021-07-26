@@ -2,6 +2,7 @@
 export interface Department {
   _id?: string;
   id?: string; // legacy _id
+  department?: string; // debug
   heartbeat?: {
     incident: EnhancedHeartbeat[];
     location: EnhancedHeartbeat[];

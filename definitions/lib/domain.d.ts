@@ -1,6 +1,6 @@
 import { Department, HeartbeatMessage, IncomingHeartbeatMessage, ResolveInterfaceVersion } from "./types";
 export default function domain(): {
-    canLogInterfaceVersion: (type: string) => boolean;
+    shouldLogInterfaceVersion: (type: string) => boolean;
     defaultMessage: () => HeartbeatMessage;
     extractVersion: (text: string, defaultVersion: string) => {
         version: string;

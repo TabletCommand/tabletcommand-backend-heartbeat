@@ -3,6 +3,7 @@
 import * as redis from "redis";
 import _ from "lodash";
 import moment from "moment-timezone";
+import debug_module from "debug";
 
 import {
   Department,
@@ -23,10 +24,12 @@ export default function indexModule(dependencies: {
   const store = StoreModule({
     client,
   });
+  const debug = debug_module("heartbeat:index");
 
   async function logInterfaceVersion(department: Department, message: IncomingHeartbeatMessage, type: string) {
-    const canLog = domain.canLogInterfaceVersion(type);
-    if (!canLog) {
+    const shouldLog = domain.shouldLogInterfaceVersion(type);
+    if (!shouldLog) {
+      debug(`Log interface version ignored for type ${type} (${department.department}).`);
       return;
     }
 
@@ -43,11 +46,12 @@ export default function indexModule(dependencies: {
   }
 
   async function log(department?: Department, message?: IncomingHeartbeatMessage, type?: string) {
+    debug(`d:${JSON.stringify(department)} m:${JSON.stringify(message)} t:${type}.`);
     if (!_.isObject(department)) {
       return;
     }
 
-    if (!_.isString(message) || !_.isString(type)) {
+    if (!_.isObject(message) || !_.isString(type)) {
       return;
     }
 
@@ -58,6 +62,7 @@ export default function indexModule(dependencies: {
     // Log Heartbeat cannot expire keys, because we'd lose the last message
     // we're limiting the list to maxListSize items instead
     const msg = domain.heartbeatFromMessage(message);
+    debug(`Will log ${JSON.stringify(msg)} for ${department.department}.`);
     try {
       await store.storeHeartbeat(key, msg);
       await logInterfaceVersion(department, message, type);

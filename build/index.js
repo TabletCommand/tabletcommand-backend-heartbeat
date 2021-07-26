@@ -41,6 +41,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var lodash_1 = __importDefault(require("lodash"));
 var moment_timezone_1 = __importDefault(require("moment-timezone"));
+var debug_1 = __importDefault(require("debug"));
 var domain_1 = __importDefault(require("./lib/domain"));
 var store_1 = __importDefault(require("./lib/store"));
 function indexModule(dependencies) {
@@ -49,14 +50,16 @@ function indexModule(dependencies) {
     var store = store_1.default({
         client: client,
     });
+    var debug = debug_1.default("heartbeat:index");
     function logInterfaceVersion(department, message, type) {
         return __awaiter(this, void 0, void 0, function () {
-            var canLog, _a, interfaceVersion, key, resolved;
+            var shouldLog, _a, interfaceVersion, key, resolved;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        canLog = domain.canLogInterfaceVersion(type);
-                        if (!canLog) {
+                        shouldLog = domain.shouldLogInterfaceVersion(type);
+                        if (!shouldLog) {
+                            debug("Log interface version ignored for type " + type + " (" + department.department + ").");
                             return [2 /*return*/];
                         }
                         _a = domain.interfaceVersionForDepartment(department, message), interfaceVersion = _a.version, key = _a.key, resolved = _a.resolved;
@@ -75,14 +78,16 @@ function indexModule(dependencies) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        debug("d:" + JSON.stringify(department) + " m:" + JSON.stringify(message) + " t:" + type + ".");
                         if (!lodash_1.default.isObject(department)) {
                             return [2 /*return*/];
                         }
-                        if (!lodash_1.default.isString(message) || !lodash_1.default.isString(type)) {
+                        if (!lodash_1.default.isObject(message) || !lodash_1.default.isString(type)) {
                             return [2 /*return*/];
                         }
                         key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
                         msg = domain.heartbeatFromMessage(message);
+                        debug("Will log " + JSON.stringify(msg) + " for " + department.department + ".");
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 4, , 5]);
