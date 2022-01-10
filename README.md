@@ -1,4 +1,4 @@
 # tabletcommand-backend-heartbeat
 
-Shared code to log heartbeats for certaing endpoints.
+Shared code to log heartbeats for certain endpoints.
 
