@@ -46,11 +46,11 @@ var domain_1 = __importDefault(require("./lib/domain"));
 var store_1 = __importDefault(require("./lib/store"));
 function indexModule(dependencies) {
     var client = dependencies.client;
-    var domain = domain_1.default();
-    var store = store_1.default({
+    var domain = (0, domain_1.default)();
+    var store = (0, store_1.default)({
         client: client,
     });
-    var debug = debug_1.default("heartbeat:index");
+    var debug = (0, debug_1.default)("heartbeat:index");
     function logInterfaceVersion(department, message, type) {
         return __awaiter(this, void 0, void 0, function () {
             var shouldLog, _a, interfaceVersion, key, resolved;
@@ -59,7 +59,7 @@ function indexModule(dependencies) {
                     case 0:
                         shouldLog = domain.shouldLogInterfaceVersion(type);
                         if (!shouldLog) {
-                            debug("Log interface version ignored for type " + type + " (" + department.department + ").");
+                            debug("Log interface version ignored for type ".concat(type, " (").concat(department.department, ")."));
                             return [2 /*return*/];
                         }
                         _a = domain.interfaceVersionForDepartment(department, message), interfaceVersion = _a.version, key = _a.key, resolved = _a.resolved;
@@ -78,7 +78,7 @@ function indexModule(dependencies) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        debug("d:" + JSON.stringify(department) + " m:" + JSON.stringify(message) + " t:" + type + ".");
+                        debug("d:".concat(JSON.stringify(department), " m:").concat(JSON.stringify(message), " t:").concat(type, "."));
                         if (!lodash_1.default.isObject(department)) {
                             return [2 /*return*/];
                         }
@@ -87,7 +87,7 @@ function indexModule(dependencies) {
                         }
                         key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
                         msg = domain.heartbeatFromMessage(message);
-                        debug("Will log " + JSON.stringify(msg) + " for " + department.department + ".");
+                        debug("Will log ".concat(JSON.stringify(msg), " for ").concat(department.department, "."));
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 4, , 5]);
@@ -144,7 +144,7 @@ function indexModule(dependencies) {
                             var t = item.RcvTime;
                             var RcvTimeSFO = moment_timezone_1.default.unix(t).tz("America/Los_Angeles").toString();
                             var RcvTimeMEL = moment_timezone_1.default.unix(t).tz("Australia/Melbourne").toString();
-                            var timeAgo = moment_timezone_1.default(t * 1000).fromNow();
+                            var timeAgo = (0, moment_timezone_1.default)(t * 1000).fromNow();
                             return {
                                 RcvTime: t,
                                 RcvTimeMEL: RcvTimeMEL,

@@ -45,19 +45,19 @@ var util_1 = require("util");
 function libStore(dependencies) {
     var client = dependencies.client;
     var maxListSize = 30;
-    var debug = debug_1.default("heartbeat:lib:store");
+    var debug = (0, debug_1.default)("heartbeat:lib:store");
     // try this: const getAsync = util.promisify<string|undefined>(this.redisClient.get.bind(this.redisClient)) – Ivan V. Mar 4 at 10:08
-    var clientGet = util_1.promisify(client.get.bind(client));
-    var clientSet = util_1.promisify(client.set.bind(client));
+    var clientGet = (0, util_1.promisify)(client.get.bind(client));
+    var clientSet = (0, util_1.promisify)(client.set.bind(client));
     // Hack for TS not recognizing the type
     // https://stackoverflow.com/questions/62320989/error-in-redis-client-del-function-with-typescript
-    var clientLPush = util_1.promisify(client.lpush.bind(client));
-    var clientLTrim = util_1.promisify(client.ltrim.bind(client));
-    var clientLRange = util_1.promisify(client.lrange.bind(client));
+    var clientLPush = (0, util_1.promisify)(client.lpush.bind(client));
+    var clientLTrim = (0, util_1.promisify)(client.ltrim.bind(client));
+    var clientLRange = (0, util_1.promisify)(client.lrange.bind(client));
     function storeInterfaceVersion(key, version) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                debug("client.set " + key + " " + version + ".");
+                debug("client.set ".concat(key, " ").concat(version, "."));
                 return [2 /*return*/, clientSet(key, version)];
             });
         });
@@ -87,11 +87,11 @@ function libStore(dependencies) {
                 switch (_a.label) {
                     case 0:
                         msgStr = JSON.stringify(msg);
-                        debug("client.lpush " + key + " " + msgStr + ".");
+                        debug("client.lpush ".concat(key, " ").concat(msgStr, "."));
                         return [4 /*yield*/, clientLPush(key, msgStr)];
                     case 1:
                         _a.sent();
-                        debug("client.ltrim " + key + " 0, " + (maxListSize - 1) + ".");
+                        debug("client.ltrim ".concat(key, " 0, ").concat(maxListSize - 1, "."));
                         return [4 /*yield*/, clientLTrim(key, 0, maxListSize - 1)];
                     case 2:
                         _a.sent();
@@ -106,7 +106,7 @@ function libStore(dependencies) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        debug("client.lrange " + key + " 0, " + maxListSize + ".");
+                        debug("client.lrange ".concat(key, " 0, ").concat(maxListSize, "."));
                         return [4 /*yield*/, clientLRange(key, 0, maxListSize)];
                     case 1:
                         results = _a.sent();
@@ -123,7 +123,7 @@ function libStore(dependencies) {
                                 decoded.push(asObject);
                             }
                             catch (error) {
-                                console.log("Could not parse " + item + " as JSON.");
+                                console.log("Could not parse ".concat(item, " as JSON."));
                                 return;
                             }
                         });

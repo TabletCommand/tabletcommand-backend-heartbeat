@@ -11,7 +11,7 @@ function domain() {
             Message: "",
             RcvTime: receivedTime,
             Status: "OK",
-            Time: "" + receivedTime,
+            Time: "".concat(receivedTime),
         };
     }
     function keyForHeartbeat(type) {
@@ -45,7 +45,7 @@ function domain() {
             departmentId = department._id;
             resolved = true;
         }
-        var key = prefix + ":" + departmentId;
+        var key = "".concat(prefix, ":").concat(departmentId);
         return {
             key: key,
             resolved: resolved,

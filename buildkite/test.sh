@@ -17,10 +17,20 @@ if hash brew 2>/dev/null; then
     fi
 fi
 
-NODEv12="v12.18.2"
+NODE_VERSION="v16.19.0"
+NPM_VERSION="8.1.2"
 
-nvm install $NODEv12
-nvm use $NODEv12
+nvm use $NODE_VERSION || nvm install $NODE_VERSION
+
+EXISTING_NPM_VERSION=`npm --version`
+
+if [ "$EXISTING_NPM_VERSION" != "$NPM_VERSION" ]; then
+  echo "installing npm@$NPM_VERSION";
+  npm i --global npm@$NPM_VERSION;
+else
+  echo "using npm@$NPM_VERSION";
+fi
+
 npm install
 npm run lint 
 npm run test

@@ -1,0 +1,3 @@
+steps:
+  - command: "bash buildkite/test.sh"
+    label: ":notes: test"
