@@ -90,13 +90,98 @@ describe("domain", () => {
     ];
     it("decodes known messages", () => {
       for (const item of messages) {
-        const { 
-          version, 
+        const {
+          version,
           resolved,
         } = domain.extractVersion(item.a, "abcd");
         assert.equal(version, item.b);
         assert.equal(resolved, true);
       }
+    });
+  });
+
+  context("calculateDelay", () => {
+    const atDate = new Date("2023-08-30T01:27:47-07:00");
+    const fallback = -80;
+    it("delay for heartbeat", () => {
+      const heartbeatMessage = {
+        Time: "2023-08-30T01:27:14-07:00",
+        Status: "Green",
+        Info: "Incidents - Checked: 4 | Active: 4 | Sent: 2 | Removed: 0 | Last Success: 2018-07-09 22:16:38-04:00",
+        Message: "Interface_One_Way_SQL JSON Heartbeat by Simple-Track - Premier One SQL 1.4.6"
+      };
+      const {
+        delay,
+        isHeartBeat,
+      } = domain.calculateDelay(heartbeatMessage, atDate, fallback);
+
+      assert.deepEqual(isHeartBeat, true);
+      assert.deepEqual(delay, 33);
+    });
+
+    it("delay for incident - entry date time", () => {
+      const heartbeatMessage = {
+        EntryDateTime: "2023-08-30T01:27:14-07:00",
+        IncidentNumber: "FC-1234",
+      };
+      const {
+        delay,
+        isHeartBeat,
+      } = domain.calculateDelay(heartbeatMessage, atDate, fallback);
+
+      assert.deepEqual(isHeartBeat, false);
+      assert.deepEqual(delay, 33);
+    });
+
+    it("delay for incident - unit - some time", () => {
+      const heartbeatMessage = {
+        EntryDateTime: "2023-08-30T01:17:14-07:00",
+        IncidentNumber: "FC-1234",
+        Unit: [
+          {
+            "TimeArrived": "2023-08-30T00:27:14-07:00",
+            "TimeAtHospital": "2023-08-30T00:27:14-07:00",
+            "TimeDispatched": "2023-08-30T00:27:14-07:00",
+            "TimePatient": "2023-08-30Z00:27:14-07:00",
+            "TimeTransporting": "2023-08-30T00:27:14-07:00",
+          },
+          {
+            "TimeCleared": "2023-08-29T01:27:14-07:00",
+            "TimeEnroute": "2023-08-30T01:27:14-07:00",
+            "TimeStaged": undefined,
+            "TimeTransport": "2023-08-30T00:27:14-07:00",
+          },
+        ]
+      };
+      const {
+        delay,
+        isHeartBeat,
+      } = domain.calculateDelay(heartbeatMessage, atDate, fallback);
+
+      assert.deepEqual(isHeartBeat, false);
+      assert.deepEqual(delay, 33);
+    });
+
+    it("delay for incident - comment - some time", () => {
+      const heartbeatMessage = {
+        EntryDateTime: "2023-08-30T00:07:14-07:00",
+        IncidentNumber: "FC-1234",
+        Comment: [
+          {
+            "CommentDateTime": "2023-08-30T00:27:14-07:00",
+          },
+          {
+            "CommentDateTime": "2023-08-30T01:27:14-07:00",
+          },
+        ]
+      };
+      const {
+        delay,
+        isHeartBeat,
+      } = domain.calculateDelay(heartbeatMessage, atDate, fallback);
+
+      assert.deepEqual(isHeartBeat, false);
+      assert.deepEqual(delay, 33);
     });
   });
 });

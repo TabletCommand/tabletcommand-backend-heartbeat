@@ -74,7 +74,7 @@ function indexModule(dependencies) {
     }
     function log(department, message, type) {
         return __awaiter(this, void 0, void 0, function () {
-            var key, msg, error_1;
+            var key, atDate, msg, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -86,7 +86,8 @@ function indexModule(dependencies) {
                             return [2 /*return*/];
                         }
                         key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
-                        msg = domain.heartbeatFromMessage(message);
+                        atDate = new Date();
+                        msg = domain.heartbeatFromMessage(message, atDate);
                         debug("Will log ".concat(JSON.stringify(msg), " for ").concat(department.department, "."));
                         _a.label = 1;
                     case 1:
@@ -131,10 +132,11 @@ function indexModule(dependencies) {
     }
     function heartbeatItems(department, type) {
         return __awaiter(this, void 0, void 0, function () {
-            var key, decodedItems, enhancedResults;
+            var dateAsTextFormat, key, decodedItems, enhancedResults;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        dateAsTextFormat = "ddd MMM DD YYYY HH:mm:ss Z";
                         key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
                         configureOpts();
                         return [4 /*yield*/, store.getHeartbeats(key)];
@@ -142,15 +144,22 @@ function indexModule(dependencies) {
                         decodedItems = _a.sent();
                         enhancedResults = decodedItems.map(function (item) {
                             var t = item.RcvTime;
-                            var RcvTimeSFO = moment_timezone_1.default.unix(t).tz("America/Los_Angeles").toString();
-                            var RcvTimeMEL = moment_timezone_1.default.unix(t).tz("Australia/Melbourne").toString();
+                            var RcvTimeSFO = moment_timezone_1.default.unix(t).tz("America/Los_Angeles").format(dateAsTextFormat);
+                            var RcvTimeMEL = moment_timezone_1.default.unix(t).tz("Australia/Melbourne").format(dateAsTextFormat);
+                            var RcvTimeISO = moment_timezone_1.default.unix(t).toISOString();
                             var timeAgo = (0, moment_timezone_1.default)(t * 1000).fromNow();
-                            return {
+                            var heartbeat = lodash_1.default.isObject(item) && lodash_1.default.isNumber(item.H) && item.H === 1;
+                            var delay = lodash_1.default.isObject(item) && lodash_1.default.isNumber(item.Delay) && lodash_1.default.isFinite(item.Delay) ? item.Delay : domain.defaultDelay;
+                            var out = {
                                 RcvTime: t,
                                 RcvTimeMEL: RcvTimeMEL,
                                 RcvTimeSFO: RcvTimeSFO,
-                                timeAgo: timeAgo
+                                RcvTimeISO: RcvTimeISO,
+                                timeAgo: timeAgo,
+                                delay: delay,
+                                heartbeat: heartbeat,
                             };
+                            return out;
                         });
                         return [2 /*return*/, enhancedResults];
                 }

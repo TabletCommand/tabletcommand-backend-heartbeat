@@ -15,7 +15,7 @@ export default function libStore(dependencies: {
   client: redis.RedisClient,
 }) {
   const { client } = dependencies;
-  const maxListSize = 30;
+  const maxListSize = 300;
   const debug = debug_module("heartbeat:lib:store");
 
   // try this: const getAsync = util.promisify<string|undefined>(this.redisClient.get.bind(this.redisClient)) – Ivan V. Mar 4 at 10:08

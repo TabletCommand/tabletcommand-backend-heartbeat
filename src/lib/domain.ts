@@ -1,13 +1,18 @@
 import _ from "lodash";
+import moment from "moment-timezone";
 
 import {
+  Comment,
   Department,
   HeartbeatMessage,
   IncomingHeartbeatMessage,
   ResolveInterfaceVersion,
+  Unit,
 } from "./types";
 
 export default function domain() {
+  const defaultDelay = -7200;// Invalid value, 2h
+
   function defaultMessage(): HeartbeatMessage {
     const receivedTime = new Date().valueOf() / 1000;
     return {
@@ -15,6 +20,8 @@ export default function domain() {
       RcvTime: receivedTime,
       Status: "OK",
       Time: `${receivedTime}`,
+      Delay: defaultDelay,
+      H: -1,
     };
   }
 
@@ -116,7 +123,7 @@ export default function domain() {
   }
 
   function interfaceVersionForDepartment(department: Department, message: IncomingHeartbeatMessage): ResolveInterfaceVersion {
-    const { 
+    const {
       key,
     } = interfaceVersionKey(department);
     const {
@@ -141,7 +148,87 @@ export default function domain() {
     return keyForDepartment(department, keyPrefix);
   }
 
-  function heartbeatFromMessage(message: IncomingHeartbeatMessage): HeartbeatMessage {
+  function calculateDelay(message: IncomingHeartbeatMessage, atDate: Date, fallback: number): {
+    delay: number,
+    isHeartBeat: boolean,
+  } {
+    let delay = fallback;
+    let isHeartBeat = false;
+
+    const unitKeys: Array<keyof Unit> = [
+      "TimeArrived",
+      "TimeAtHospital",
+      "TimeCleared",
+      "TimeDispatched",
+      "TimeEnroute",
+      "TimePatient",
+      "TimeStaged",
+      "TimeTransport",
+      "TimeTransporting",
+    ];
+
+    let t = "";
+    if (_.isObject(message)) {
+      // Process heartbeat
+      if (_.isString(message.Time) && message.Time !== "" && !_.isString(message.IncidentNumber)) {
+        isHeartBeat = true;
+        t = message.Time;
+      } else {
+        let candidate = new Date(0);
+        // Process incident dates
+        if (_.isString(message.EntryDateTime) && message.EntryDateTime !== "" && moment(message.EntryDateTime, true).isValid()) {
+          candidate = new Date(Math.max(candidate.valueOf(), moment(message.EntryDateTime, true).valueOf()));
+        }
+        if (_.isString(message.ClosedDateTime) && message.ClosedDateTime !== "" && moment(message.ClosedDateTime, true).isValid()) {
+          candidate = new Date(Math.max(candidate.valueOf(), moment(message.ClosedDateTime, true).valueOf()));
+        }
+
+        // Extract from Unit
+        if (_.isArray(message.Unit)) {
+          message.Unit.forEach((u: Unit) => {
+            if (!_.isObject(u)) {
+              return;
+            }
+
+            for (const timeKey of unitKeys) {
+              const maybeUnitTime = u[timeKey];
+              if (_.isString(maybeUnitTime) && maybeUnitTime != "" && moment(maybeUnitTime, true).isValid()) {
+                candidate = new Date(Math.max(candidate.valueOf(), moment(maybeUnitTime, true).valueOf()));
+              }
+            }
+          });
+        }
+
+        // Extract from Comment
+        if (_.isArray(message.Comment)) {
+          message.Comment.forEach((c: Comment) => {
+            if (!_.isObject(c)) {
+              return;
+            }
+
+            if (_.isString(c.CommentDateTime) && c.CommentDateTime !== "" && moment(c.CommentDateTime, true).isValid()) {
+              candidate = new Date(Math.max(candidate.valueOf(), moment(c.CommentDateTime, true).valueOf()));
+            }
+          });
+        }
+
+        t = candidate.toISOString();
+      }
+    }
+
+    if (moment(t, true).isValid()) {
+      const provided = moment(t, true); // Strict
+      const current = moment(atDate);
+      delay = moment.duration(current.diff(provided)).as("seconds");
+    }
+
+    return {
+      delay,
+      isHeartBeat,
+    };
+  }
+
+  function heartbeatFromMessage(message: IncomingHeartbeatMessage, atDate: Date): HeartbeatMessage {
     if (!_.isString(message.Time)) {
       // If no .Time provided, peek into .Unit
       if (_.isArray(message.Unit)) {
@@ -164,8 +251,15 @@ export default function domain() {
       }
     }
 
-    const msg = _.pick(message, ["Time", "Status", "Message", "RcvTime"]);
-    msg.RcvTime = new Date().getTime() / 1000.0;
+    const {
+      delay,
+      isHeartBeat,
+    } = calculateDelay(message, atDate, defaultDelay);
+
+    const msg = _.pick(message, ["Time", "Status", "Message", "RcvTime", "Delay", "H"]);
+    msg.RcvTime = atDate.valueOf() / 1000.0;
+    msg.Delay = delay;
+    msg.H = isHeartBeat ? 1 : 0;
     return msg;
   }
 
@@ -180,6 +274,9 @@ export default function domain() {
     interfaceVersionKey,
     keyForDepartment,
     keyForHeartbeat,
+
+    defaultDelay,
+    calculateDelay,
   };
 }
 

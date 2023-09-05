@@ -6,7 +6,7 @@ export default function domain(): {
         version: string;
         resolved: boolean;
     };
-    heartbeatFromMessage: (message: IncomingHeartbeatMessage) => HeartbeatMessage;
+    heartbeatFromMessage: (message: IncomingHeartbeatMessage, atDate: Date) => HeartbeatMessage;
     heartbeatKeyForTypeOfDepartment: (type: string, department: Department) => {
         key: string;
         resolved: boolean;
@@ -27,6 +27,11 @@ export default function domain(): {
     keyForHeartbeat: (type: string) => {
         keyPrefix: string;
         resolved: boolean;
+    };
+    defaultDelay: number;
+    calculateDelay: (message: IncomingHeartbeatMessage, atDate: Date, fallback: number) => {
+        delay: number;
+        isHeartBeat: boolean;
     };
 };
 export declare type DomainModule = ReturnType<typeof domain>;

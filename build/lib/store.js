@@ -44,7 +44,7 @@ var debug_1 = __importDefault(require("debug"));
 var util_1 = require("util");
 function libStore(dependencies) {
     var client = dependencies.client;
-    var maxListSize = 30;
+    var maxListSize = 300;
     var debug = (0, debug_1.default)("heartbeat:lib:store");
     // try this: const getAsync = util.promisify<string|undefined>(this.redisClient.get.bind(this.redisClient)) – Ivan V. Mar 4 at 10:08
     var clientGet = (0, util_1.promisify)(client.get.bind(client));

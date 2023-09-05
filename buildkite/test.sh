@@ -31,6 +31,14 @@ else
   echo "using npm@$NPM_VERSION";
 fi
 
+echo "--- install";
 npm install
+
+echo "--- spelling (cspell)";
+npx cspell
+
+echo "--- lint";
 npm run lint 
+
+echo "--- test";
 npm run test

@@ -59,9 +59,11 @@ export default function indexModule(dependencies: {
       key,
     } = domain.heartbeatKeyForTypeOfDepartment(type, department);
 
+    const atDate = new Date();
+
     // Log Heartbeat cannot expire keys, because we'd lose the last message
     // we're limiting the list to maxListSize items instead
-    const msg = domain.heartbeatFromMessage(message);
+    const msg = domain.heartbeatFromMessage(message, atDate);
     debug(`Will log ${JSON.stringify(msg)} for ${department.department}.`);
     try {
       await store.storeHeartbeat(key, msg);
@@ -95,20 +97,30 @@ export default function indexModule(dependencies: {
   }
 
   async function heartbeatItems(department: Department, type: string): Promise<EnhancedHeartbeat[]> {
+    const dateAsTextFormat = "ddd MMM DD YYYY HH:mm:ss Z";
     const { key } = domain.heartbeatKeyForTypeOfDepartment(type, department);
     configureOpts();
     const decodedItems = await store.getHeartbeats(key);
     const enhancedResults: EnhancedHeartbeat[] = decodedItems.map((item: StoredHeartbeat) => {
       const t = item.RcvTime;
-      const RcvTimeSFO = moment.unix(t).tz("America/Los_Angeles").toString();
-      const RcvTimeMEL = moment.unix(t).tz("Australia/Melbourne").toString();
+      const RcvTimeSFO = moment.unix(t).tz("America/Los_Angeles").format(dateAsTextFormat);
+      const RcvTimeMEL = moment.unix(t).tz("Australia/Melbourne").format(dateAsTextFormat);
+      const RcvTimeISO = moment.unix(t).toISOString();
       const timeAgo = moment(t * 1000).fromNow();
-      return {
+
+      const heartbeat = _.isObject(item) && _.isNumber(item.H) && item.H === 1;
+      const delay = _.isObject(item) && _.isNumber(item.Delay) && _.isFinite(item.Delay) ? item.Delay : domain.defaultDelay;
+
+      const out: EnhancedHeartbeat = {
         RcvTime: t,
         RcvTimeMEL,
         RcvTimeSFO,
-        timeAgo
+        RcvTimeISO,
+        timeAgo,
+        delay,
+        heartbeat,
       };
+      return out;
     });
     return enhancedResults;
   }
@@ -133,7 +145,7 @@ export default function indexModule(dependencies: {
     try {
       const incident = await heartbeatItems(department, "incident");
       department.heartbeat.incident = incident;
-      
+
       const status = await heartbeatItems(department, "status");
       department.heartbeat.status = status;
 
