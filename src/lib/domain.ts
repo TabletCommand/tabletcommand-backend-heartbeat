@@ -173,7 +173,7 @@ export default function domain() {
       if (_.isString(message.Time) && message.Time !== "" && !_.isString(message.IncidentNumber)) {
         isHeartBeat = true;
         t = message.Time;
-      } else {
+      } else if (_.isString(message.IncidentNumber) && message.IncidentNumber.trim() !== "") {
         let candidate = new Date(0);
         // Process incident dates
         if (_.isString(message.EntryDateTime) && message.EntryDateTime !== "" && moment(message.EntryDateTime, true).isValid()) {

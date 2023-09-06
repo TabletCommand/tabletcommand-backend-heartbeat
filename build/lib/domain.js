@@ -142,7 +142,7 @@ function domain() {
                 isHeartBeat = true;
                 t = message.Time;
             }
-            else {
+            else if (lodash_1.default.isString(message.IncidentNumber) && message.IncidentNumber.trim() !== "") {
                 var candidate_1 = new Date(0);
                 // Process incident dates
                 if (lodash_1.default.isString(message.EntryDateTime) && message.EntryDateTime !== "" && (0, moment_timezone_1.default)(message.EntryDateTime, true).isValid()) {

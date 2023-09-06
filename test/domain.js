@@ -183,5 +183,18 @@ describe("domain", () => {
       assert.deepEqual(isHeartBeat, false);
       assert.deepEqual(delay, 33);
     });
+
+    it("delay for invalid request is fallback", () => {
+      const heartbeatMessage = {
+        "tag": "2289cdf9-787a-4317-8097-bc5b0e727b5d",
+      };
+      const {
+        delay,
+        isHeartBeat,
+      } = domain.calculateDelay(heartbeatMessage, atDate, fallback);
+
+      assert.deepEqual(isHeartBeat, false);
+      assert.deepEqual(delay, fallback);
+    });
   });
 });
