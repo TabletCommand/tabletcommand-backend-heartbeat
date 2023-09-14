@@ -17,10 +17,8 @@ export default function domain() {
   const defaultDelay = -7200;// Invalid value, 2h in the future
 
   function defaultMessage(atDate = new Date()): HeartbeatMessage {
-    const receivedTime = atDate.valueOf() / 1000;
     return {
       Message: "OK",
-      RcvTime: receivedTime,
       Status: "OK",
       Time: atDate.toISOString(),
     };
@@ -205,7 +203,7 @@ export default function domain() {
 
         // Extract from Unit
         if (_.isArray(message.Unit)) {
-          message.Unit.forEach((u: Unit) => {
+          message.Unit?.forEach((u: Partial<Unit>) => {
             if (!_.isObject(u)) {
               return;
             }

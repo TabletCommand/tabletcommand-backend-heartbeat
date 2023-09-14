@@ -11,10 +11,8 @@ function domain() {
     var defaultDelay = -7200; // Invalid value, 2h in the future
     function defaultMessage(atDate) {
         if (atDate === void 0) { atDate = new Date(); }
-        var receivedTime = atDate.valueOf() / 1000;
         return {
             Message: "OK",
-            RcvTime: receivedTime,
             Status: "OK",
             Time: atDate.toISOString(),
         };
@@ -123,7 +121,7 @@ function domain() {
         return keyForDepartment(department, keyPrefix);
     }
     function calculateDelay(message, atDate, fallback) {
-        var _a;
+        var _a, _b;
         var delay = fallback;
         var isHeartBeat = false;
         debug("calculateDelay message: ".concat(JSON.stringify(message), " atDate: ").concat(atDate.toISOString(), " fallback: ").concat(fallback));
@@ -170,7 +168,7 @@ function domain() {
                 }
                 // Extract from Unit
                 if (lodash_1.default.isArray(message.Unit)) {
-                    message.Unit.forEach(function (u) {
+                    (_b = message.Unit) === null || _b === void 0 ? void 0 : _b.forEach(function (u) {
                         var _a;
                         if (!lodash_1.default.isObject(u)) {
                             return;

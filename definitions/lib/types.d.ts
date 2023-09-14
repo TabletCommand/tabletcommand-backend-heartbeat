@@ -17,7 +17,6 @@ export interface HeartbeatMessage {
     Time: string;
     Status: string;
     Message: string;
-    RcvTime: number;
     Interface?: string;
 }
 export interface Unit {
@@ -37,14 +36,14 @@ export interface Comment {
 }
 export interface IncidentMessage {
     Interface?: string;
-    Unit?: Unit[];
-    unit?: Unit[];
+    Unit?: Partial<Unit>[];
+    unit?: Partial<Unit>[];
     EntryDateTime?: string;
     ClosedDateTime?: string;
-    IncidentNumber?: string;
+    IncidentNumber: string;
     Comment?: Comment[];
 }
-export declare type IncomingHeartbeatMessage = IncidentMessage | HeartbeatMessage;
+export declare type IncomingHeartbeatMessage = Partial<IncidentMessage> | Partial<HeartbeatMessage>;
 export declare type RedisKey = string;
 export declare type InterfaceVersion = string;
 export interface StoredHeartbeat {

@@ -20,7 +20,6 @@ export interface HeartbeatMessage {
   Time: string;
   Status: string;
   Message: string;
-  RcvTime: number;
   Interface?: string;
 }
 
@@ -41,19 +40,20 @@ export interface Comment {
   CommentDateTime?: string;
 }
 
+// Roughly match CADIncident
 export interface IncidentMessage {
   Interface?: string;
-  Unit?: Unit[];
-  unit?: Unit[];
+  Unit?: Partial<Unit>[];
+  unit?: Partial<Unit>[];
   EntryDateTime?: string;
   ClosedDateTime?: string;
 
   //
-  IncidentNumber?: string;
+  IncidentNumber: string;
   Comment?: Comment[];
 }
 
-export type IncomingHeartbeatMessage = IncidentMessage | HeartbeatMessage;
+export type IncomingHeartbeatMessage = Partial<IncidentMessage> | Partial<HeartbeatMessage>;
 
 export type RedisKey = string;
 export type InterfaceVersion = string;
