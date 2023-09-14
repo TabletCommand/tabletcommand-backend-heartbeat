@@ -4,9 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var lodash_1 = __importDefault(require("lodash"));
+var debug_1 = __importDefault(require("debug"));
 var moment_timezone_1 = __importDefault(require("moment-timezone"));
 function domain() {
-    var defaultDelay = -7200; // Invalid value, 2h
+    var debug = (0, debug_1.default)("heartbeat:lib:domain");
+    var defaultDelay = -7200; // Invalid value, 2h in the future
     function defaultMessage() {
         var receivedTime = new Date().valueOf() / 1000;
         return {
@@ -14,8 +16,6 @@ function domain() {
             RcvTime: receivedTime,
             Status: "OK",
             Time: "".concat(receivedTime),
-            Delay: defaultDelay,
-            H: -1,
         };
     }
     function keyForHeartbeat(type) {
@@ -100,7 +100,7 @@ function domain() {
             };
         }
         var msgInterface = "";
-        if (lodash_1.default.isString(message.Interface)) {
+        if (lodash_1.default.isString(message === null || message === void 0 ? void 0 : message.Interface)) {
             msgInterface = message.Interface;
         }
         return extractVersion(msgInterface, defaultVersion);
@@ -124,6 +124,7 @@ function domain() {
     function calculateDelay(message, atDate, fallback) {
         var delay = fallback;
         var isHeartBeat = false;
+        debug("calculateDelay message: ".concat(JSON.stringify(message), " atDate: ").concat(atDate.toISOString(), " fallback: ").concat(fallback));
         var unitKeys = [
             "TimeArrived",
             "TimeAtHospital",
@@ -135,21 +136,34 @@ function domain() {
             "TimeTransport",
             "TimeTransporting",
         ];
+        var current = (0, moment_timezone_1.default)(atDate);
+        var minDate = current.clone().subtract(48, "hours");
+        var src = "?";
         var t = "";
+        var valid = false;
         if (lodash_1.default.isObject(message)) {
             // Process heartbeat
-            if (lodash_1.default.isString(message.Time) && message.Time !== "" && !lodash_1.default.isString(message.IncidentNumber)) {
+            if ("Time" in message && lodash_1.default.isString(message.Time) && message.Time !== "" && !("IncidentNumber" in message)) {
                 isHeartBeat = true;
                 t = message.Time;
+                src = "hb";
             }
-            else if (lodash_1.default.isString(message.IncidentNumber) && message.IncidentNumber.trim() !== "") {
-                var candidate_1 = new Date(0);
+            else if ("IncidentNumber" in message && lodash_1.default.isString(message.IncidentNumber) && message.IncidentNumber.trim() !== "") {
+                var candidate_1 = (0, moment_timezone_1.default)(0); // Start with an older date
                 // Process incident dates
-                if (lodash_1.default.isString(message.EntryDateTime) && message.EntryDateTime !== "" && (0, moment_timezone_1.default)(message.EntryDateTime, true).isValid()) {
-                    candidate_1 = new Date(Math.max(candidate_1.valueOf(), (0, moment_timezone_1.default)(message.EntryDateTime, true).valueOf()));
+                if (lodash_1.default.isString(message.EntryDateTime) && message.EntryDateTime !== "") {
+                    var mEntryDate = (0, moment_timezone_1.default)(message.EntryDateTime, true);
+                    if (mEntryDate.isValid() && candidate_1.isBefore(mEntryDate)) {
+                        candidate_1 = mEntryDate;
+                        src = "entry";
+                    }
                 }
-                if (lodash_1.default.isString(message.ClosedDateTime) && message.ClosedDateTime !== "" && (0, moment_timezone_1.default)(message.ClosedDateTime, true).isValid()) {
-                    candidate_1 = new Date(Math.max(candidate_1.valueOf(), (0, moment_timezone_1.default)(message.ClosedDateTime, true).valueOf()));
+                if (lodash_1.default.isString(message.ClosedDateTime) && message.ClosedDateTime !== "") {
+                    var mClosedDate = (0, moment_timezone_1.default)(message.ClosedDateTime, true);
+                    if (mClosedDate.isValid() && candidate_1.isBefore(mClosedDate)) {
+                        candidate_1 = mClosedDate;
+                        src = "closed";
+                    }
                 }
                 // Extract from Unit
                 if (lodash_1.default.isArray(message.Unit)) {
@@ -160,8 +174,12 @@ function domain() {
                         for (var _i = 0, unitKeys_1 = unitKeys; _i < unitKeys_1.length; _i++) {
                             var timeKey = unitKeys_1[_i];
                             var maybeUnitTime = u[timeKey];
-                            if (lodash_1.default.isString(maybeUnitTime) && maybeUnitTime != "" && (0, moment_timezone_1.default)(maybeUnitTime, true).isValid()) {
-                                candidate_1 = new Date(Math.max(candidate_1.valueOf(), (0, moment_timezone_1.default)(maybeUnitTime, true).valueOf()));
+                            if (lodash_1.default.isString(maybeUnitTime) && maybeUnitTime != "") {
+                                var mUnitTime = (0, moment_timezone_1.default)(maybeUnitTime, true);
+                                if (mUnitTime.isValid() && candidate_1.isBefore(mUnitTime)) {
+                                    candidate_1 = mUnitTime;
+                                    src = "unit".concat(timeKey);
+                                }
                             }
                         }
                     });
@@ -172,53 +190,42 @@ function domain() {
                         if (!lodash_1.default.isObject(c)) {
                             return;
                         }
-                        if (lodash_1.default.isString(c.CommentDateTime) && c.CommentDateTime !== "" && (0, moment_timezone_1.default)(c.CommentDateTime, true).isValid()) {
-                            candidate_1 = new Date(Math.max(candidate_1.valueOf(), (0, moment_timezone_1.default)(c.CommentDateTime, true).valueOf()));
+                        if (lodash_1.default.isString(c.CommentDateTime) && c.CommentDateTime !== "") {
+                            var mCommentDate = (0, moment_timezone_1.default)(c.CommentDateTime, true);
+                            if (mCommentDate.isValid() && candidate_1.isBefore(mCommentDate)) {
+                                candidate_1 = mCommentDate;
+                                src = "commentDate";
+                            }
                         }
                     });
                 }
-                t = candidate_1.toISOString();
+                if (candidate_1.isAfter(minDate)) {
+                    t = candidate_1.toISOString();
+                }
             }
         }
-        if ((0, moment_timezone_1.default)(t, true).isValid()) {
+        if (t !== "" && (0, moment_timezone_1.default)(t, true).isValid()) {
             var provided = (0, moment_timezone_1.default)(t, true); // Strict
-            var current = (0, moment_timezone_1.default)(atDate);
             delay = moment_timezone_1.default.duration(current.diff(provided)).as("seconds");
+            valid = true;
         }
+        debug("calculateDelay isHeartBeat:".concat(isHeartBeat, " t:").concat(t, " at:").concat(atDate.toISOString(), " delay:").concat(delay, " src: ").concat(src, "."));
         return {
             delay: delay,
             isHeartBeat: isHeartBeat,
+            src: src,
+            valid: valid,
         };
     }
     function heartbeatFromMessage(message, atDate) {
-        if (!lodash_1.default.isString(message.Time)) {
-            // If no .Time provided, peek into .Unit
-            if (lodash_1.default.isArray(message.Unit)) {
-                var unitTime_1 = null;
-                lodash_1.default.each(message.Unit, function (unit) {
-                    if (lodash_1.default.isString(unit.TimeArrived)) {
-                        unitTime_1 = unit.TimeArrived;
-                    }
-                    else if (lodash_1.default.isString(unit.TimeEnroute)) {
-                        unitTime_1 = unit.TimeEnroute;
-                    }
-                    else if (lodash_1.default.isString(unit.TimeDispatched)) {
-                        unitTime_1 = unit.TimeDispatched;
-                    }
-                });
-                if (!lodash_1.default.isNull(unitTime_1) && !lodash_1.default.isUndefined(unitTime_1)) {
-                    message.Time = unitTime_1;
-                }
-            }
-            else if (lodash_1.default.isString(message.EntryDateTime)) {
-                message.Time = message.EntryDateTime;
-            }
-        }
-        var _a = calculateDelay(message, atDate, defaultDelay), delay = _a.delay, isHeartBeat = _a.isHeartBeat;
-        var msg = lodash_1.default.pick(message, ["Time", "Status", "Message", "RcvTime", "Delay", "H"]);
-        msg.RcvTime = atDate.valueOf() / 1000.0;
-        msg.Delay = delay;
-        msg.H = isHeartBeat ? 1 : 0;
+        var _a = calculateDelay(message, atDate, defaultDelay), delay = _a.delay, isHeartBeat = _a.isHeartBeat, src = _a.src, valid = _a.valid;
+        var msg = {
+            Delay: delay,
+            H: isHeartBeat ? 1 : 0,
+            src: src,
+            v: valid,
+            RcvTime: atDate.valueOf(),
+        };
         return msg;
     }
     return {

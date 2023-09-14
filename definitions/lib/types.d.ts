@@ -18,8 +18,7 @@ export interface HeartbeatMessage {
     Status: string;
     Message: string;
     RcvTime: number;
-    Delay: number;
-    H: number;
+    Interface?: string;
 }
 export interface Unit {
     TimeArrived?: string;
@@ -35,7 +34,7 @@ export interface Unit {
 export interface Comment {
     CommentDateTime?: string;
 }
-export interface IncomingHeartbeatMessage extends HeartbeatMessage {
+export interface IncidentMessage {
     Interface?: string;
     Unit?: Unit[];
     unit?: Unit[];
@@ -44,21 +43,24 @@ export interface IncomingHeartbeatMessage extends HeartbeatMessage {
     IncidentNumber?: string;
     Comment?: Comment[];
 }
+export declare type IncomingHeartbeatMessage = IncidentMessage | HeartbeatMessage;
 export declare type RedisKey = string;
 export declare type InterfaceVersion = string;
 export interface StoredHeartbeat {
     RcvTime: number;
     Delay: number;
     H: number;
+    src: string;
+    v: boolean;
 }
 export interface EnhancedHeartbeat {
     RcvTime: number;
-    RcvTimeSFO: string;
-    RcvTimeMEL: string;
     RcvTimeISO: string;
     timeAgo: string;
     delay: number;
     heartbeat: boolean;
+    src: string;
+    valid: boolean;
 }
 export interface ResolveInterfaceVersion {
     version: InterfaceVersion;

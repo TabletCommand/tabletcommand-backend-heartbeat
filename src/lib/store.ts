@@ -7,7 +7,6 @@ import { promisify } from "util";
 import {
   InterfaceVersion,
   RedisKey,
-  HeartbeatMessage,
   StoredHeartbeat,
 } from "./types";
 
@@ -42,7 +41,7 @@ export default function libStore(dependencies: {
     return version;
   }
 
-  async function storeHeartbeat(key: RedisKey, msg: HeartbeatMessage) {
+  async function storeHeartbeat(key: RedisKey, msg: StoredHeartbeat) {
     const msgStr = JSON.stringify(msg);
     debug(`client.lpush ${key} ${msgStr}.`);
     await clientLPush(key, msgStr);
@@ -67,7 +66,7 @@ export default function libStore(dependencies: {
       } catch (error) {
         console.log(`Could not parse ${item} as JSON.`);
         return;
-      } 
+      }
     });
     return decoded;
   }

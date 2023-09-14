@@ -97,14 +97,11 @@ export default function indexModule(dependencies: {
   }
 
   async function heartbeatItems(department: Department, type: string): Promise<EnhancedHeartbeat[]> {
-    const dateAsTextFormat = "ddd MMM DD YYYY HH:mm:ss Z";
     const { key } = domain.heartbeatKeyForTypeOfDepartment(type, department);
     configureOpts();
     const decodedItems = await store.getHeartbeats(key);
     const enhancedResults: EnhancedHeartbeat[] = decodedItems.map((item: StoredHeartbeat) => {
       const t = item.RcvTime;
-      const RcvTimeSFO = moment.unix(t).tz("America/Los_Angeles").format(dateAsTextFormat);
-      const RcvTimeMEL = moment.unix(t).tz("Australia/Melbourne").format(dateAsTextFormat);
       const RcvTimeISO = moment.unix(t).toISOString();
       const timeAgo = moment(t * 1000).fromNow();
 
@@ -113,12 +110,12 @@ export default function indexModule(dependencies: {
 
       const out: EnhancedHeartbeat = {
         RcvTime: t,
-        RcvTimeMEL,
-        RcvTimeSFO,
         RcvTimeISO,
         timeAgo,
         delay,
         heartbeat,
+        src: item.src ?? "",
+        valid: item.v ?? true,
       };
       return out;
     });

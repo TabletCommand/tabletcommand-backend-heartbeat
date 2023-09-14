@@ -196,5 +196,23 @@ describe("domain", () => {
       assert.deepEqual(isHeartBeat, false);
       assert.deepEqual(delay, fallback);
     });
+
+    it("sample", () => {
+      const closeMessage = {
+        "Interface": "EdgeFrontier Interface by Tablet Command Inc - 0.5 - Incident Close",
+        "AgencyID": "PAFD",
+        "IncidentNumber": "PFE2306622",
+        "TransactionID": "8e757055-3536-4ae7-8838-1998dc64aee1",
+        "ClosedDateTime": "",
+        "tag": "b9743647-ec12-4f6b-b851-e0040dd20202",
+      };
+      const {
+        delay,
+        isHeartBeat,
+      } = domain.calculateDelay(closeMessage, atDate, fallback);
+
+      assert.deepEqual(isHeartBeat, false);
+      assert.deepEqual(delay, fallback);
+    });
   });
 });

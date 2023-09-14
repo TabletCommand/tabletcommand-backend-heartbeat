@@ -1,4 +1,4 @@
-import { Department, HeartbeatMessage, IncomingHeartbeatMessage, ResolveInterfaceVersion } from "./types";
+import { Department, HeartbeatMessage, IncomingHeartbeatMessage, ResolveInterfaceVersion, StoredHeartbeat } from "./types";
 export default function domain(): {
     shouldLogInterfaceVersion: (type: string) => boolean;
     defaultMessage: () => HeartbeatMessage;
@@ -6,7 +6,7 @@ export default function domain(): {
         version: string;
         resolved: boolean;
     };
-    heartbeatFromMessage: (message: IncomingHeartbeatMessage, atDate: Date) => HeartbeatMessage;
+    heartbeatFromMessage: (message: IncomingHeartbeatMessage, atDate: Date) => StoredHeartbeat;
     heartbeatKeyForTypeOfDepartment: (type: string, department: Department) => {
         key: string;
         resolved: boolean;
@@ -32,6 +32,8 @@ export default function domain(): {
     calculateDelay: (message: IncomingHeartbeatMessage, atDate: Date, fallback: number) => {
         delay: number;
         isHeartBeat: boolean;
+        src: string;
+        valid: boolean;
     };
 };
 export declare type DomainModule = ReturnType<typeof domain>;

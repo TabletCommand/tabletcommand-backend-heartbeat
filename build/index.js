@@ -132,32 +132,30 @@ function indexModule(dependencies) {
     }
     function heartbeatItems(department, type) {
         return __awaiter(this, void 0, void 0, function () {
-            var dateAsTextFormat, key, decodedItems, enhancedResults;
+            var key, decodedItems, enhancedResults;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        dateAsTextFormat = "ddd MMM DD YYYY HH:mm:ss Z";
                         key = domain.heartbeatKeyForTypeOfDepartment(type, department).key;
                         configureOpts();
                         return [4 /*yield*/, store.getHeartbeats(key)];
                     case 1:
                         decodedItems = _a.sent();
                         enhancedResults = decodedItems.map(function (item) {
+                            var _a, _b;
                             var t = item.RcvTime;
-                            var RcvTimeSFO = moment_timezone_1.default.unix(t).tz("America/Los_Angeles").format(dateAsTextFormat);
-                            var RcvTimeMEL = moment_timezone_1.default.unix(t).tz("Australia/Melbourne").format(dateAsTextFormat);
                             var RcvTimeISO = moment_timezone_1.default.unix(t).toISOString();
                             var timeAgo = (0, moment_timezone_1.default)(t * 1000).fromNow();
                             var heartbeat = lodash_1.default.isObject(item) && lodash_1.default.isNumber(item.H) && item.H === 1;
                             var delay = lodash_1.default.isObject(item) && lodash_1.default.isNumber(item.Delay) && lodash_1.default.isFinite(item.Delay) ? item.Delay : domain.defaultDelay;
                             var out = {
                                 RcvTime: t,
-                                RcvTimeMEL: RcvTimeMEL,
-                                RcvTimeSFO: RcvTimeSFO,
                                 RcvTimeISO: RcvTimeISO,
                                 timeAgo: timeAgo,
                                 delay: delay,
                                 heartbeat: heartbeat,
+                                src: (_a = item.src) !== null && _a !== void 0 ? _a : "",
+                                valid: (_b = item.v) !== null && _b !== void 0 ? _b : true,
                             };
                             return out;
                         });
