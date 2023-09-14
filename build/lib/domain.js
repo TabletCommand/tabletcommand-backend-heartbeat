@@ -9,13 +9,14 @@ var moment_timezone_1 = __importDefault(require("moment-timezone"));
 function domain() {
     var debug = (0, debug_1.default)("heartbeat:lib:domain");
     var defaultDelay = -7200; // Invalid value, 2h in the future
-    function defaultMessage() {
-        var receivedTime = new Date().valueOf() / 1000;
+    function defaultMessage(atDate) {
+        if (atDate === void 0) { atDate = new Date(); }
+        var receivedTime = atDate.valueOf() / 1000;
         return {
-            Message: "",
+            Message: "OK",
             RcvTime: receivedTime,
             Status: "OK",
-            Time: "".concat(receivedTime),
+            Time: atDate.toISOString(),
         };
     }
     function keyForHeartbeat(type) {
@@ -122,6 +123,7 @@ function domain() {
         return keyForDepartment(department, keyPrefix);
     }
     function calculateDelay(message, atDate, fallback) {
+        var _a;
         var delay = fallback;
         var isHeartBeat = false;
         debug("calculateDelay message: ".concat(JSON.stringify(message), " atDate: ").concat(atDate.toISOString(), " fallback: ").concat(fallback));
@@ -150,24 +152,26 @@ function domain() {
             }
             else if ("IncidentNumber" in message && lodash_1.default.isString(message.IncidentNumber) && message.IncidentNumber.trim() !== "") {
                 var candidate_1 = (0, moment_timezone_1.default)(0); // Start with an older date
+                var incidentNumber_1 = (_a = message.IncidentNumber) !== null && _a !== void 0 ? _a : "X";
                 // Process incident dates
                 if (lodash_1.default.isString(message.EntryDateTime) && message.EntryDateTime !== "") {
                     var mEntryDate = (0, moment_timezone_1.default)(message.EntryDateTime, true);
                     if (mEntryDate.isValid() && candidate_1.isBefore(mEntryDate)) {
                         candidate_1 = mEntryDate;
-                        src = "entry";
+                        src = "".concat(incidentNumber_1, "-entry");
                     }
                 }
                 if (lodash_1.default.isString(message.ClosedDateTime) && message.ClosedDateTime !== "") {
                     var mClosedDate = (0, moment_timezone_1.default)(message.ClosedDateTime, true);
                     if (mClosedDate.isValid() && candidate_1.isBefore(mClosedDate)) {
                         candidate_1 = mClosedDate;
-                        src = "closed";
+                        src = "".concat(incidentNumber_1, "-closed");
                     }
                 }
                 // Extract from Unit
                 if (lodash_1.default.isArray(message.Unit)) {
                     message.Unit.forEach(function (u) {
+                        var _a;
                         if (!lodash_1.default.isObject(u)) {
                             return;
                         }
@@ -178,7 +182,7 @@ function domain() {
                                 var mUnitTime = (0, moment_timezone_1.default)(maybeUnitTime, true);
                                 if (mUnitTime.isValid() && candidate_1.isBefore(mUnitTime)) {
                                     candidate_1 = mUnitTime;
-                                    src = "unit".concat(timeKey);
+                                    src = "".concat(incidentNumber_1, "-").concat((_a = u.UnitID) !== null && _a !== void 0 ? _a : "X", "-").concat(timeKey);
                                 }
                             }
                         }
@@ -194,7 +198,7 @@ function domain() {
                             var mCommentDate = (0, moment_timezone_1.default)(c.CommentDateTime, true);
                             if (mCommentDate.isValid() && candidate_1.isBefore(mCommentDate)) {
                                 candidate_1 = mCommentDate;
-                                src = "commentDate";
+                                src = "".concat(incidentNumber_1, "-commentDate");
                             }
                         }
                     });

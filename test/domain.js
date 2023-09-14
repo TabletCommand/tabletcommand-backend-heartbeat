@@ -191,13 +191,15 @@ describe("domain", () => {
       const {
         delay,
         isHeartBeat,
+        valid,
       } = domain.calculateDelay(heartbeatMessage, atDate, fallback);
 
+      assert.deepEqual(valid, false);
       assert.deepEqual(isHeartBeat, false);
       assert.deepEqual(delay, fallback);
     });
 
-    it("sample", () => {
+    it("delay for invalid req (no usable time)", () => {
       const closeMessage = {
         "Interface": "EdgeFrontier Interface by Tablet Command Inc - 0.5 - Incident Close",
         "AgencyID": "PAFD",
@@ -209,10 +211,26 @@ describe("domain", () => {
       const {
         delay,
         isHeartBeat,
+        valid,
       } = domain.calculateDelay(closeMessage, atDate, fallback);
 
+      assert.deepEqual(valid, false);
       assert.deepEqual(isHeartBeat, false);
       assert.deepEqual(delay, fallback);
+    });
+
+    it("delay from default heartbeat message", () => {
+      const defaultAtDate = new Date("2023-08-30T01:27:37-07:00");
+      const defaultMessage = domain.defaultMessage(defaultAtDate);
+      const {
+        delay,
+        isHeartBeat,
+        valid,
+      } = domain.calculateDelay(defaultMessage, atDate, fallback);
+
+      assert.deepEqual(valid, true);
+      assert.deepEqual(isHeartBeat, true);
+      assert.deepEqual(delay, 10);
     });
   });
 });

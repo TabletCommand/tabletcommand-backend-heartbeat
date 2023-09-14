@@ -16,13 +16,13 @@ export default function domain() {
   const debug = debug_module("heartbeat:lib:domain");
   const defaultDelay = -7200;// Invalid value, 2h in the future
 
-  function defaultMessage(): HeartbeatMessage {
-    const receivedTime = new Date().valueOf() / 1000;
+  function defaultMessage(atDate = new Date()): HeartbeatMessage {
+    const receivedTime = atDate.valueOf() / 1000;
     return {
-      Message: "",
+      Message: "OK",
       RcvTime: receivedTime,
       Status: "OK",
-      Time: `${receivedTime}`,
+      Time: atDate.toISOString(),
     };
   }
 
@@ -185,12 +185,13 @@ export default function domain() {
         src = "hb";
       } else if ("IncidentNumber" in message && _.isString(message.IncidentNumber) && message.IncidentNumber.trim() !== "") {
         let candidate = moment(0); // Start with an older date
+        const incidentNumber = message.IncidentNumber ?? "X";
         // Process incident dates
         if (_.isString(message.EntryDateTime) && message.EntryDateTime !== "") {
           const mEntryDate = moment(message.EntryDateTime, true);
           if (mEntryDate.isValid() && candidate.isBefore(mEntryDate)) {
             candidate = mEntryDate;
-            src = "entry";
+            src = `${incidentNumber}-entry`;
           }
         }
 
@@ -198,7 +199,7 @@ export default function domain() {
           const mClosedDate = moment(message.ClosedDateTime, true);
           if (mClosedDate.isValid() && candidate.isBefore(mClosedDate)) {
             candidate = mClosedDate;
-            src = "closed";
+            src = `${incidentNumber}-closed`;
           }
         }
 
@@ -215,7 +216,7 @@ export default function domain() {
                 const mUnitTime = moment(maybeUnitTime, true);
                 if (mUnitTime.isValid() && candidate.isBefore(mUnitTime)) {
                   candidate = mUnitTime;
-                  src = `unit${timeKey}`;
+                  src = `${incidentNumber}-${u.UnitID ?? "X"}-${timeKey}`;
                 }
               }
             }
@@ -233,7 +234,7 @@ export default function domain() {
               const mCommentDate = moment(c.CommentDateTime, true);
               if (mCommentDate.isValid() && candidate.isBefore(mCommentDate)) {
                 candidate = mCommentDate;
-                src = "commentDate";
+                src = `${incidentNumber}-commentDate`;
               }
             }
           });

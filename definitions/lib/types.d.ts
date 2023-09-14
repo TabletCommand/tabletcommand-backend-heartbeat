@@ -21,6 +21,7 @@ export interface HeartbeatMessage {
     Interface?: string;
 }
 export interface Unit {
+    UnitID: string;
     TimeArrived?: string;
     TimeAtHospital?: string;
     TimeCleared?: string;

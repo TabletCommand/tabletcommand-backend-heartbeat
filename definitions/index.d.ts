@@ -5,7 +5,7 @@ export default function indexModule(dependencies: {
 }): {
     checkDepartment: (department: Department) => Promise<Department>;
     checkDepartments: (items: Department[]) => Promise<Department[]>;
-    defaultMessage: () => import("./lib/types").HeartbeatMessage;
+    defaultMessage: (atDate?: Date) => import("./lib/types").HeartbeatMessage;
     log: (department?: Department, message?: IncomingHeartbeatMessage, type?: string) => Promise<void>;
     conditionalLog: (shouldLog: boolean, department?: Department, message?: IncomingHeartbeatMessage, type?: string) => Promise<void>;
     logInterfaceVersion: (department: Department, message: IncomingHeartbeatMessage, type: string) => Promise<unknown>;
