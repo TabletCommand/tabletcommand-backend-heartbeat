@@ -273,9 +273,9 @@ export default function domain() {
     const msg: StoredHeartbeat = {
       Delay: delay,
       H: isHeartBeat ? 1 : 0,
+      RcvTime: atDate.valueOf() / 1000.0,
       src,
       v: valid,
-      RcvTime: atDate.valueOf(),
     };
     return msg;
   }

@@ -226,9 +226,9 @@ function domain() {
         var msg = {
             Delay: delay,
             H: isHeartBeat ? 1 : 0,
+            RcvTime: atDate.valueOf() / 1000.0,
             src: src,
             v: valid,
-            RcvTime: atDate.valueOf(),
         };
         return msg;
     }
